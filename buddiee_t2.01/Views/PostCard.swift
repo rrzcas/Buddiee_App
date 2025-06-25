@@ -7,11 +7,11 @@ struct PostCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Image Carousel (if images exist)
-            if !post.imageURLs.isEmpty {
+            if !post.photos.isEmpty {
                 TabView(selection: $currentImageIndex) {
-                    ForEach(0..<post.imageURLs.count, id: \.self) {
+                    ForEach(0..<post.photos.count, id: \.self) {
                         index in
-                        if let url = URL(string: post.imageURLs[index]) {
+                        if let url = URL(string: post.photos[index]) {
                             AsyncImage(url: url) {
                                 phase in
                                 switch phase {
@@ -52,12 +52,12 @@ struct PostCard: View {
             }
 
             // Title
-            Text(post.title)
+            Text(post.mainCaption)
                 .font(.headline)
                 .foregroundColor(.primary)
             
             // Description
-            Text(post.description)
+            Text(post.detailedCaption ?? "")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .lineLimit(3)
@@ -65,9 +65,9 @@ struct PostCard: View {
             // Footer
             HStack {
                 // Source
-                Text(post.source.rawValue)
-                    .font(.caption)
-                    .foregroundColor(.blue)
+                // Text(post.source.rawValue)
+                //     .font(.caption)
+                //     .foregroundColor(.blue)
                 
                 Spacer()
                 
@@ -87,7 +87,18 @@ struct PostCard: View {
 
 struct PostCard_Previews: PreviewProvider {
     static var previews: some View {
-        PostCard(post: Post.samplePosts[0])
+        PostCard(post: Post(
+            id: UUID(),
+            userId: "userId",
+            photos: [],
+            mainCaption: "Sample Post",
+            detailedCaption: "Sample description",
+            subject: "study",
+            location: "London",
+            createdAt: Date(),
+            likes: 0,
+            comments: []
+        ))
             .previewLayout(.sizeThatFits)
             .padding()
     }

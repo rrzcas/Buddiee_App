@@ -12,77 +12,55 @@ struct PostDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Cover Image
-                if !post.imageURLs.isEmpty {
-                    if let firstImage = post.imageURLs.first {
-                        AsyncImage(url: URL(string: firstImage)) { image in
-                            image
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 200)
-                        } placeholder: {
-                            Image(systemName: post.category.icon)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 200)
-                                .foregroundColor(post.category.color)
-                        }
-                    }
-                } else {
-                    Image(systemName: post.category.icon)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                        .foregroundColor(post.category.color)
-                }
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    // Title and Category
-                    HStack {
-                        Text(post.title)
-                            .font(.title2)
-                            .bold()
-                        
-                        Spacer()
-                        
-                        Label(post.category.rawValue, systemImage: post.category.icon)
-                            .foregroundColor(post.category.color)
-                    }
-                    
-                    // User Info
-                    NavigationLink(destination: ProfileView(user: post.user)) {
-                        HStack {
-                            Image(systemName: post.user.profileImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 40, height: 40)
-                                .clipShape(Circle())
-                            
-                            VStack(alignment: .leading) {
-                                Text(post.user.username)
-                                    .font(.headline)
-                                Text(post.location)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                // Cover Image(s) - TabView for multiple photos
+                if !post.photos.isEmpty {
+                    TabView {
+                        ForEach(post.photos, id: \.self) { photoURL in
+                            if let url = URL(string: photoURL) {
+                                AsyncImage(url: url) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                } placeholder: {
+                                    ProgressView()
+                                }
                             }
                         }
                     }
+                    .tabViewStyle(.page)
+                    .frame(height: 300)
+                } else {
+                    Color.gray.opacity(0.1)
+                        .frame(height: 300)
+                }
+                
+                // Content below image
+                VStack(alignment: .leading, spacing: 12) {
+                    // Main Caption (Title)
+                    Text(post.mainCaption)
+                        .font(.title)
+                        .bold()
                     
-                    // Description
-                    Text(post.description)
-                        .font(.body)
-                    
-                    // Online/In-person status
+                    // User Info and other details
                     HStack {
-                        Image(systemName: post.isOnline ? "video.fill" : "person.fill")
-                        Text(post.isOnline ? "Online" : "In Person")
+                        Image(systemName: "person.circle.fill")
+                        Text("User") // Placeholder
+                        Spacer()
+                        Text(post.createdAt, style: .relative)
                     }
+                    .font(.subheadline)
                     .foregroundColor(.secondary)
                     
-                    // Date
-                    Text("Posted \(post.createdAt, style: .relative)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    // Detailed Caption
+                    Text(post.detailedCaption ?? "")
+                        .font(.body)
+                    
+                    // Location
+                    if let location = post.location {
+                        Label(location, systemImage: "mappin.and.ellipse")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                     
                     Divider()
                     
@@ -125,12 +103,15 @@ struct PostDetailView: View {
         guard !newComment.isEmpty else { return }
         
         let comment = Comment(
-            userId: userStore.currentUser.id,
-            username: userStore.currentUser.username,
-            content: newComment
+            id: UUID(),
+            postId: post.id,
+            userId: userStore.currentUser?.id ?? "",
+            username: userStore.currentUser?.username ?? "Unknown",
+            text: newComment,
+            createdAt: Date()
         )
         
-        postStore.addComment(comment, to: post.id)
+        postStore.addComment(comment, to: post)
         newComment = ""
         showingCommentAlert = true
     }
@@ -142,7 +123,7 @@ struct CommentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(comment.username)
+                Text("User Info Placeholder")
                     .font(.subheadline)
                     .bold()
                 
@@ -153,7 +134,7 @@ struct CommentView: View {
                     .foregroundColor(.secondary)
             }
             
-            Text(comment.content)
+            Text(comment.text)
                 .font(.body)
         }
         .padding(.vertical, 8)
@@ -162,7 +143,18 @@ struct CommentView: View {
 
 #Preview {
     NavigationView {
-        PostDetailView(post: Post.samplePosts[0])
+        PostDetailView(post: Post(
+            id: UUID(),
+            userId: "userId",
+            photos: [],
+            mainCaption: "Sample Post",
+            detailedCaption: "Sample description",
+            subject: "study",
+            location: "London",
+            createdAt: Date(),
+            likes: 0,
+            comments: []
+        ))
             .environmentObject(BrowsingHistoryStore())
             .environmentObject(PostStore())
             .environmentObject(UserStore())

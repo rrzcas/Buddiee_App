@@ -9,7 +9,7 @@ struct ProfileHeaderView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: user.profileImage)
+            Image(systemName: user.profilePicture ?? "person.circle")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 120, height: 120)
@@ -20,7 +20,7 @@ struct ProfileHeaderView: View {
                 .font(.title)
                 .bold()
             
-            Text(user.bio)
+            Text(user.bio ?? "")
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
@@ -59,7 +59,7 @@ struct InterestsView: View {
                     Text(interest.rawValue.capitalized)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(interest.color.opacity(0.1))
+                        .background(Color.blue.opacity(0.1))
                         .cornerRadius(15)
                 }
             }
@@ -115,10 +115,10 @@ struct PostMenuView: View {
                 Label("Edit", systemImage: "pencil")
             }
             Button(action: onPin) {
-                Label(post.isPinned ? "Unpin" : "Pin to Top", systemImage: post.isPinned ? "pin.slash.fill" : "pin.fill")
+                Label("Pin to Top", systemImage: "pin.fill")
             }
             Button(action: onTogglePrivacy) {
-                Label(post.isPrivate ? "Set to Public" : "Set to Private", systemImage: post.isPrivate ? "eye.fill" : "eye.slash.fill")
+                Label("Set to Private", systemImage: "eye.slash.fill")
             }
             Button(role: .destructive, action: onDelete) {
                 Label("Delete", systemImage: "trash")
@@ -142,7 +142,7 @@ struct ProfileView: View {
     @State private var showingEditProfile = false
     
     private var userPosts: [Post] {
-        postStore.posts.filter { $0.user.id == user.id }
+        postStore.posts.filter { $0.userId == user.id }
     }
     
     var body: some View {
@@ -150,7 +150,7 @@ struct ProfileView: View {
             VStack(spacing: 20) {
                 // Profile Header
                 VStack(spacing: 16) {
-                    Image(systemName: user.profileImage)
+                    Image(systemName: user.profilePicture ?? "person.circle")
                         .resizable()
                         .scaledToFill()
                         .frame(width: 120, height: 120)
@@ -162,7 +162,7 @@ struct ProfileView: View {
                             .font(.title2)
                             .fontWeight(.bold)
                         
-                        Text(user.location)
+                        Text(user.bio ?? "")
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }
@@ -173,7 +173,7 @@ struct ProfileView: View {
                             .font(.headline)
                             .foregroundColor(.gray)
                         
-                        Text(user.bio)
+                        Text(user.bio ?? "")
                             .font(.body)
                             .multilineTextAlignment(.leading)
                             .padding(.horizontal)
@@ -182,30 +182,9 @@ struct ProfileView: View {
                     .padding(.horizontal)
                     
                     // Optional Interests Section
-                    if let interests = user.interests, !interests.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Interests")
-                                .font(.headline)
-                                .foregroundColor(.gray)
-                            
-                            FlowLayout(spacing: 8) {
-                                ForEach(interests, id: \.self) { interest in
-                                    HStack {
-                                        Image(systemName: interest.icon)
-                                        Text(interest.rawValue.capitalized)
-                                    }
-                                    .font(.subheadline)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(interest.color.opacity(0.2))
-                                    .foregroundColor(interest.color)
-                                    .cornerRadius(20)
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
-                    }
+                    // if let interests = user.interests, !interests.isEmpty {
+                    //     ...
+                    // }
                 }
                 .padding()
                 
@@ -295,7 +274,12 @@ struct FlowLayout: Layout {
 struct ProfileView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            ProfileView(user: User.sampleUsers[0])
+            ProfileView(user: User(
+                id: "userId",
+                username: "TestUser",
+                profilePicture: nil,
+                bio: "Test bio"
+            ))
                 .environmentObject(PostStore())
         }
     }

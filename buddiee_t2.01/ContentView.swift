@@ -42,168 +42,72 @@ struct FilterButton: View {
 }
 
 struct ContentView: View {
-    @EnvironmentObject var postStore: PostStore
-    @EnvironmentObject var userStore: UserStore
-    @EnvironmentObject var browsingHistoryStore: BrowsingHistoryStore
-    @State private var selectedSource: PostSource = .all
-    @State private var searchText = ""
-    @State private var showingPostCreation = false
-    @State private var showingProfile = false
-    @State private var showingMessages = false
-    @State private var showingLocationFinder = false
-    @State private var selectedLocation: String?
-    @State private var showingPartialPosts = false
-    @State private var showingAddPost = false
-    @State private var showingSettings = false
-    @State private var showingFilter = false
-    @State private var showingPostDetail: Post?
-    @State private var showingError = false
-    @State private var selectedFilter: PostFilter = .all
-    @State private var showPartialResults = false
-    
-    var filteredPosts: [Post] {
-        let searchFiltered = postStore.posts.filter { post in
-            searchText.isEmpty || 
-            post.title.localizedCaseInsensitiveContains(searchText) ||
-            post.description.localizedCaseInsensitiveContains(searchText)
-        }
-        
-        let sourceFiltered = searchFiltered.filter { post in
-            selectedSource == .all || post.source == selectedSource
-        }
-        
-        return sourceFiltered.sorted { $0.createdAt > $1.createdAt }
-    }
-    
+    @StateObject var postStore = PostStore()
+    @StateObject var userStore = UserStore()
+    @StateObject var messageStore = MessageStore()
+    @StateObject var locationStore = LocationStore()
+    @StateObject var historyStore = BrowsingHistoryStore()
+    @State private var selectedTab = 0
+
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                searchAndFilterSection
-                postsDisplaySection
+        TabView(selection: $selectedTab) {
+            NavigationView {
+                PostsFeedView()
             }
-            .navigationTitle("Study Buddies")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    toolbarLeadingItem
+            .tabItem {
+                Image(systemName: "doc.text.fill")
+                Text("Posts")
+            }
+            .tag(0)
+            CreatePostView()
+                .tabItem {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Create")
                 }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    toolbarTrailingItems
+                .tag(1)
+            LocationView()
+                .tabItem {
+                    Image(systemName: "map.fill")
+                    Text("Location")
                 }
-            }
-            .sheet(isPresented: $showingPostCreation) {
-                PostCreationView()
-            }
-            .sheet(isPresented: $showingProfile) {
-                ProfileView(user: userStore.currentUser)
-            }
-            .sheet(isPresented: $showingMessages) {
-                MessagesView()
-            }
-            .sheet(isPresented: $showingLocationFinder) {
-                LocationFinderView(selectedLocation: $selectedLocation)
-            }
-            .sheet(isPresented: $showingAddPost) {
-                AddPostView()
-            }
-            .sheet(isPresented: $showingFilter) {
-                FilterView(selectedFilter: $selectedFilter)
-            }
-            .sheet(item: $showingPostDetail) { post in
-                PostDetailView(post: post)
-                    .environmentObject(postStore)
-                    .environmentObject(userStore)
-                    .environmentObject(browsingHistoryStore)
-            }
-            .overlay(
-                StatusView()
-                    .environmentObject(postStore)
-            )
-            .onAppear {
-                Task {
-                    await postStore.updatePosts()
+                .tag(2)
+            MessagesView()
+                .tabItem {
+                    Image(systemName: "message.fill")
+                    Text("Messages")
                 }
-            }
+                .tag(3)
+            ProfileView(user: User(id: "userId", username: "TestUser", profilePicture: nil, bio: "Test bio"))
+                .tabItem {
+                    Image(systemName: "person.fill")
+                    Text("Profile")
+                }
+                .tag(4)
         }
+        .environmentObject(postStore)
+        .environmentObject(userStore)
+        .environmentObject(messageStore)
+        .environmentObject(locationStore)
+        .environmentObject(historyStore)
     }
-    
-    // MARK: - Private Helper Views
-    private var searchAndFilterSection: some View {
-        VStack(spacing: 0) {
-            SearchBar(text: $searchText)
-                .padding(.horizontal)
-                .padding(.top, 8)
+}
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(PostSource.allCases, id: \.self) { source in
-                        SourceFilterButton(
-                            source: source,
-                            isSelected: selectedSource == source,
-                            action: { selectedSource = source }
-                        )
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-            }
-        }
+// Placeholder views for each tab
+struct PostsFeedView_TabPlaceholder: View {
+    var body: some View {
+        Text("Posts Feed")
     }
+}
 
-    private var postsDisplaySection: some View {
-        Group {
-            if postStore.isLoading {
-                ProgressView("Loading posts...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let error = postStore.errorMessage {
-                VStack {
-                    Text("Error: \(error)")
-                        .foregroundColor(.red)
-                        .padding()
-                    Button("Retry") {
-                        Task {
-                            await postStore.updatePosts()
-                        }
-                    }
-                }
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 16) {
-                        ForEach(filteredPosts) { post in
-                            NavigationLink {
-                                PostDetailView(post: post)
-                                    .environmentObject(postStore)
-                                    .environmentObject(userStore)
-                                    .environmentObject(browsingHistoryStore)
-                            } label: {
-                                PostCard1(post: post)
-                                    .environmentObject(postStore)
-                            }
-                        }
-                    }
-                    .padding()
-                }
-            }
-        }
+struct CreatePostView: View {
+    var body: some View {
+        Text("Create Post")
     }
+}
 
-    private var toolbarLeadingItem: some View {
-        Button(action: { showingProfile = true }) {
-            Image(systemName: "person.circle")
-        }
-    }
-
-    private var toolbarTrailingItems: some View {
-        HStack {
-            Button(action: { showingMessages = true }) {
-                Image(systemName: "message")
-            }
-
-            Button(action: { showingPostCreation = true }) {
-                Image(systemName: "plus")
-            }
-        }
+struct LocationView: View {
+    var body: some View {
+        Text("Location Map")
     }
 }
 

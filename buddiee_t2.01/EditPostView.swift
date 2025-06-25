@@ -6,17 +6,17 @@ struct EditPostView: View {
     @Environment(\.dismiss) var dismiss
     
     let post: Post
-    @State private var title: String
-    @State private var description: String
-    @State private var category: ActivityCategory
+    @State private var mainCaption: String
+    @State private var detailedCaption: String
+    @State private var subject: String
     @State private var selectedImages: [UIImage] = []
     @State private var photoPickerItems: [PhotosPickerItem] = []
     
     init(post: Post) {
         self.post = post
-        _title = State(initialValue: post.title)
-        _description = State(initialValue: post.description)
-        _category = State(initialValue: post.category)
+        _mainCaption = State(initialValue: post.mainCaption)
+        _detailedCaption = State(initialValue: post.detailedCaption ?? "")
+        _subject = State(initialValue: post.subject)
     }
     
     var body: some View {
@@ -62,23 +62,18 @@ struct EditPostView: View {
                         }
                     }
                     
-                    Picker("Category", selection: $category) {
-                        ForEach(ActivityCategory.allCases, id: \.self) { category in
-                            Text(category.rawValue.capitalized)
-                                .tag(category)
-                        }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-                    
-                    TextField("Title", text: $title)
+                    TextField("Main Caption", text: $mainCaption)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     
-                    TextEditor(text: $description)
+                    TextEditor(text: $detailedCaption)
                         .frame(height: 200)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                         )
+                    
+                    TextField("Subject", text: $subject)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
                     
                     Button("Save Changes") {
                         saveChanges()
@@ -105,31 +100,36 @@ struct EditPostView: View {
     
     private func saveChanges() {
         // Convert selected images to URLs or keep existing ones
-        let imageURLs = selectedImages.isEmpty ? post.imageURLs : selectedImages.map { _ in "photo.on.rectangle" }
-        
+        let imageURLs = selectedImages.isEmpty ? post.photos : selectedImages.map { _ in "photo.on.rectangle" }
         let updatedPost = Post(
             id: post.id,
-            title: title,
-            description: description,
-            imageURLs: imageURLs,
-            user: post.user,
-            category: category,
+            userId: post.userId,
+            photos: imageURLs,
+            mainCaption: mainCaption,
+            detailedCaption: detailedCaption,
+            subject: subject,
             location: post.location,
-            source: post.source,
-            originalUrl: post.originalUrl,
             createdAt: post.createdAt,
-            isPrivate: post.isPrivate,
-            isPinned: post.isPinned,
-            isOnline: post.isOnline,
+            likes: post.likes,
             comments: post.comments
         )
-        
-        postStore.updatePost(updatedPost)
+        postStore.createPost(updatedPost) // or update logic as needed
         dismiss()
     }
 }
 
 #Preview {
-    EditPostView(post: Post.samplePosts[0])
-        .environmentObject(PostStore())
+    EditPostView(post: Post(
+        id: UUID(),
+        userId: "userId",
+        photos: [],
+        mainCaption: "Sample Post",
+        detailedCaption: "Sample description",
+        subject: "study",
+        location: "London",
+        createdAt: Date(),
+        likes: 0,
+        comments: []
+    ))
+    .environmentObject(PostStore())
 } 

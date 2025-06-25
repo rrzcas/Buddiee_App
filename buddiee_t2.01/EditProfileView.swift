@@ -4,22 +4,16 @@ import PhotosUI
 struct EditProfileView: View {
     let user: User
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var postStore: PostStore
     
     @State private var username: String
-    @State private var location: String
     @State private var bio: String
-    @State private var interests: [ActivityCategory]
-    @State private var newInterest: String = ""
     @State private var photoPickerItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
     
     init(user: User) {
         self.user = user
         _username = State(initialValue: user.username)
-        _location = State(initialValue: user.location)
-        _bio = State(initialValue: user.bio)
-        _interests = State(initialValue: user.interests ?? [])
+        _bio = State(initialValue: user.bio ?? "")
     }
     
     var body: some View {
@@ -34,8 +28,17 @@ struct EditProfileView: View {
                                 .scaledToFill()
                                 .frame(width: 100, height: 100)
                                 .clipShape(Circle())
+                        } else if let profilePicture = user.profilePicture, let url = URL(string: profilePicture) {
+                            AsyncImage(url: url) { image in
+                                image.resizable()
+                            } placeholder: {
+                                ProgressView()
+                            }
+                            .scaledToFill()
+                            .frame(width: 100, height: 100)
+                            .clipShape(Circle())
                         } else {
-                            Image(systemName: user.profileImage)
+                            Image(systemName: "person.circle.fill")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 100, height: 100)
@@ -55,33 +58,11 @@ struct EditProfileView: View {
                 
                 Section(header: Text("Basic Information")) {
                     TextField("Username", text: $username)
-                    TextField("Location", text: $location)
                 }
                 
                 Section(header: Text("About")) {
                     TextEditor(text: $bio)
                         .frame(minHeight: 100)
-                }
-                
-                Section(header: Text("Optional Interests")) {
-                    ForEach(ActivityCategory.allCases, id: \.self) { category in
-                        Toggle(isOn: Binding(
-                            get: { interests.contains(category) },
-                            set: { isSelected in
-                                if isSelected {
-                                    interests.append(category)
-                                } else {
-                                    interests.removeAll { $0 == category }
-                                }
-                            }
-                        )) {
-                            HStack {
-                                Image(systemName: category.icon)
-                                    .foregroundColor(category.color)
-                                Text(category.rawValue.capitalized)
-                            }
-                        }
-                    }
                 }
             }
             .navigationTitle("Edit Profile")
@@ -98,9 +79,9 @@ struct EditProfileView: View {
                     }
                 }
             }
-            .onChange(of: photoPickerItem) { newItem in
+            .onChange(of: photoPickerItem) {
                 Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                    if let data = try? await photoPickerItem?.loadTransferable(type: Data.self),
                        let image = UIImage(data: data) {
                         selectedImage = image
                     }
@@ -110,41 +91,27 @@ struct EditProfileView: View {
     }
     
     private func saveChanges() {
+        // Here you would typically call a method on a UserStore
+        // to save the updated user information. For now, we just dismiss.
+        
+        // Example of creating an updated user object:
         let updatedUser = User(
             id: user.id,
             username: username,
-            profileImage: user.profileImage,
-            location: location,
-            bio: bio,
-            interests: interests.isEmpty ? nil : interests
+            profilePicture: user.profilePicture, // This would need to be updated with the new image URL after uploading
+            bio: bio
         )
-        
-        // Update user in all posts
-        for post in postStore.posts where post.user.id == user.id {
-            let updatedPost = Post(
-                id: post.id,
-                title: post.title,
-                description: post.description,
-                imageURLs: post.imageURLs,
-                user: updatedUser,
-                category: post.category,
-                location: post.location,
-                source: post.source,
-                originalUrl: post.originalUrl,
-                createdAt: post.createdAt,
-                isPrivate: post.isPrivate,
-                isPinned: post.isPinned,
-                isOnline: post.isOnline,
-                comments: post.comments
-            )
-            postStore.updatePost(updatedPost)
-        }
+        print("Saving updated user: \(updatedUser)")
         
         dismiss()
     }
 }
 
 #Preview {
-    EditProfileView(user: User.sampleUsers[0])
-        .environmentObject(PostStore())
+    EditProfileView(user: User(
+        id: "userId",
+        username: "TestUser",
+        profilePicture: nil,
+        bio: "Test bio"
+    ))
 } 

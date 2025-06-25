@@ -1,0 +1,160 @@
+{
+  "" : {
+    "const-values" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/buddiee_t2.01-master.swiftconstvalues",
+    "dependencies" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/buddiee_t2.01-master.d",
+    "diagnostics" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/buddiee_t2.01-master.dia",
+    "emit-module-dependencies" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/buddiee_t2.01-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/buddiee_t2.01-master-emit-module.dia",
+    "swift-dependencies" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/buddiee_t2.01-master.swiftdeps"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/BrowsingHistoryView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/BrowsingHistoryView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/BrowsingHistoryView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/BrowsingHistoryView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/CommentsView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/CommentsView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/CommentsView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/CommentsView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/ContentView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/ContentView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/ContentView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/ContentView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/EditPostView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/EditPostView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/EditPostView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/EditPostView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/EditProfileView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/EditProfileView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/EditProfileView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/EditProfileView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/LocationFinderView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/LocationFinderView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/LocationFinderView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/LocationFinderView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/LocationManager.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/LocationManager.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/LocationManager.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/LocationManager.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/MessagesView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/MessagesView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/MessagesView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/MessagesView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Models/BrowsingHistoryStore.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/BrowsingHistoryStore.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/BrowsingHistoryStore.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/BrowsingHistoryStore.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Models/FilteredPostDebugInfo.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/FilteredPostDebugInfo.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/FilteredPostDebugInfo.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/FilteredPostDebugInfo.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Models/Models.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/Models.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/Models.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/Models.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Models/Post.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/Post.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/Post.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/Post.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Models/PostFilter.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostFilter.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostFilter.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostFilter.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Models/PostScraperService.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostScraperService.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostScraperService.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostScraperService.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Models/PostSource.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostSource.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostSource.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostSource.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Models/PostStore.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostStore.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostStore.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostStore.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Models/Store.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/Store.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/Store.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/Store.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Models/UserStore.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/UserStore.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/UserStore.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/UserStore.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/PostCard1.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostCard1.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostCard1.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostCard1.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/PostCreationView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostCreationView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostCreationView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostCreationView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/PostDetailView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostDetailView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostDetailView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostDetailView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/ProfileView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/ProfileView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/ProfileView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/ProfileView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/SceneDelegate.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/SceneDelegate.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/SceneDelegate.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/SceneDelegate.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/SettingsView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/SettingsView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/SettingsView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/SettingsView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/StatusView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/StatusView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/StatusView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/StatusView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Views/AddPostView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/AddPostView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/AddPostView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/AddPostView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Views/FilterView.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/FilterView.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/FilterView.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/FilterView.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/Views/PostCard.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostCard.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostCard.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/PostCard.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/buddiee_t2.01/buddiee_t2_01App.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/buddiee_t2_01App.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/buddiee_t2_01App.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/buddiee_t2_01App.o"
+  },
+  "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/helenfung/Desktop/buddiee_t2.01/build/buddiee_t2.01.build/Release/buddiee_t2.01.build/Objects-normal/x86_64/GeneratedAssetSymbols.o"
+  }
+}

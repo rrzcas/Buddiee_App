@@ -22,7 +22,7 @@ struct LocationFinderView: View {
             VStack {
                 Map {
                     ForEach(postStore.posts) { post in
-                        Annotation(post.location, coordinate: getCoordinate(for: post)) {
+                        Annotation(post.location ?? "", coordinate: getCoordinate(for: post)) {
                             Image(systemName: "mappin.circle.fill")
                                 .foregroundColor(.red)
                                 .font(.title)
@@ -34,9 +34,9 @@ struct LocationFinderView: View {
                 List {
                     ForEach(filteredPosts) { post in
                         VStack(alignment: .leading) {
-                            Text(post.location)
+                            Text(post.location ?? "")
                                 .font(.headline)
-                            Text(post.description)
+                            Text(post.detailedCaption ?? "")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
                         }
@@ -56,14 +56,14 @@ struct LocationFinderView: View {
             return postStore.posts
         }
         return postStore.posts.filter { post in
-            post.location.localizedCaseInsensitiveContains(searchText)
+            (post.location ?? "").localizedCaseInsensitiveContains(searchText)
         }
     }
     
     private func getCoordinate(for post: Post) -> CLLocationCoordinate2D {
         // For now, we'll use a simple mapping of locations to coordinates
         // In a real app, you would want to use proper geocoding
-        switch post.location.lowercased() {
+        switch (post.location ?? "").lowercased() {
         case "london":
             return CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278)
         case "manchester":

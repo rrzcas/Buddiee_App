@@ -1,11 +1,14 @@
 import Foundation
 
-struct FilteredPostDebugInfo: Codable {
-    let url: String
-    let reason: String
-    let timestamp: Date
+public struct FilteredPostDebugInfo: Codable {
+    public let url: String
+    public let reason: String
+    public let timestamp: Date
     
     enum CodingKeys: String, CodingKey {
         case url
         case reason
+        case timestamp
+    }
+}
  

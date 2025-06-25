@@ -32,26 +32,23 @@ struct PostCreationView: View {
 
     private func createPost() {
         let imageURLs = selectedImages.compactMap { saveImageToFileSystem(image: $0)?.absoluteString }
-
         let newPost = Post(
-            title: title,
-            description: content,
-            imageURLs: imageURLs,
-            user: userStore.currentUser,
-            category: selectedCategory,
-            location: userStore.currentUser.location,
-            source: .app
+            id: UUID(),
+            userId: userStore.currentUser?.id ?? "",
+            photos: imageURLs,
+            mainCaption: title,
+            detailedCaption: content,
+            subject: selectedCategory.rawValue,
+            location: userStore.currentUser?.bio,
+            createdAt: Date(),
+            likes: 0,
+            comments: []
         )
-        
-        postStore.addPost(newPost)
+        postStore.createPost(newPost)
         showSuccessAlert = true
-        
-        // Dismiss after delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             dismiss()
         }
-
-        // Reset fields
         resetFields()
     }
     

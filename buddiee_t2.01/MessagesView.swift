@@ -18,7 +18,7 @@ struct MessagesView: View {
                     )
                 } else {
                     ConversationsList(
-                        conversations: User.sampleUsers,
+                        conversations: sampleUsers,
                         onSelectUser: { user in
                             self.selectedUserId = user.id
                         }
@@ -32,11 +32,13 @@ struct MessagesView: View {
         guard !messageText.isEmpty, let selectedUserId = selectedUserId else { return }
         
         let newMessage = Message(
-            id: UUID().uuidString,
+            id: UUID(),
             senderId: "currentUser", // Replace with actual current user ID
             receiverId: selectedUserId,
-            content: messageText,
-            timestamp: Date()
+            text: messageText,
+            imageURL: nil,
+            createdAt: Date(),
+            isRead: false
         )
         
         messages.append(newMessage)
@@ -59,7 +61,7 @@ struct ChatView: View {
                         .foregroundColor(.primary)
                 }
                 
-                if let user = User.sampleUsers.first(where: { $0.id == userId }) {
+                if let user = sampleUsers.first(where: { $0.id == userId }) {
                     Text(user.username)
                         .font(.headline)
                 }
@@ -102,7 +104,7 @@ struct MessageBubble: View {
                 Spacer()
             }
             
-            Text(message.content)
+            Text(message.text)
                 .padding()
                 .background(message.senderId == "currentUser" ? Color.blue : Color.gray.opacity(0.2))
                 .foregroundColor(message.senderId == "currentUser" ? .white : .primary)
@@ -132,9 +134,6 @@ struct ConversationsList: View {
                         VStack(alignment: .leading) {
                             Text(user.username)
                                 .font(.headline)
-                            Text(user.location)
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
                         }
                         
                         Spacer()
@@ -146,3 +145,7 @@ struct ConversationsList: View {
         .navigationTitle("Messages")
     }
 }
+
+let sampleUsers: [User] = [
+    User(id: "userId", username: "TestUser", profilePicture: nil, bio: "Test bio")
+]

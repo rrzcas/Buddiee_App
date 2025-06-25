@@ -7,18 +7,16 @@ struct BrowsingHistoryView: View {
     var body: some View {
         NavigationView {
             List {
-                ForEach(historyStore.browsingHistory) { post in
+                ForEach(historyStore.viewedPosts) { post in
                     NavigationLink {
                         PostDetailView(post: post)
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(post.title)
+                            Text(post.mainCaption)
                                 .font(.headline)
                             
                             HStack {
-                                Image(systemName: post.category.icon)
-                                    .foregroundColor(post.category.color)
-                                Text(post.category.rawValue)
+                                Text(post.subject)
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                                 

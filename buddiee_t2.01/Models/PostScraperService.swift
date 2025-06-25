@@ -72,17 +72,6 @@ public class PostScraperService {
     }
 }
 
-// MARK: - Post Model
-extension Post: Hashable {
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(originalUrl) // Use URL as unique identifier
-    }
-    
-    public static func == (lhs: Post, rhs: Post) -> Bool {
-        lhs.originalUrl == rhs.originalUrl
-    }
-}
-
 // MARK: - Reddit API Response Models
 private struct RedditResponse: Codable {
     let data: RedditListing

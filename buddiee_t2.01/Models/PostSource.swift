@@ -1,6 +1,6 @@
 import Foundation
 
-enum PostSource: String, CaseIterable {
+public enum PostSource: String, Codable, CaseIterable {
     case all = "All"
     case reddit = "Reddit"
     case redNote = "RedNote"

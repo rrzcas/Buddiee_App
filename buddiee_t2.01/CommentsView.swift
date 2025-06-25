@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CommentsView: View {
     @EnvironmentObject var store: PostStore
+    @EnvironmentObject var userStore: UserStore
     let post: Post
     @State private var newComment: String = ""
     @State private var showingCommentAlert = false
@@ -42,17 +43,16 @@ struct CommentsView: View {
     }
     
     private func addComment() {
-        guard !newComment.isEmpty else { return }
-        
+        guard !newComment.isEmpty, let currentUser = userStore.currentUser else { return }
         let comment = Comment(
             id: UUID(),
-            userId: store.currentUser.id,
-            username: store.currentUser.username,
-            content: newComment,
+            postId: post.id,
+            userId: currentUser.id,
+            username: currentUser.username,
+            text: newComment,
             createdAt: Date()
         )
-        
-        store.addComment(comment, to: post.id)
+        store.addComment(comment, to: post)
         newComment = ""
         showingCommentAlert = true
     }
@@ -67,15 +67,12 @@ struct CommentRowView: View {
                 Text(comment.username)
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                
                 Spacer()
-                
                 Text(comment.createdAt, style: .relative)
                     .font(.caption)
                     .foregroundColor(.gray)
             }
-            
-            Text(comment.content)
+            Text(comment.text)
                 .font(.body)
         }
         .padding(.vertical, 8)
@@ -84,16 +81,17 @@ struct CommentRowView: View {
 
 #Preview {
     CommentsView(post: Post(
-        title: "Sample Post",
-        description: "Sample description",
-        imageURLs: ["sample_image_url"],
-        user: User.sampleUsers[0],
-        category: .study,
+        id: UUID(),
+        userId: "sampleUserId",
+        photos: ["sample_image_url"],
+        mainCaption: "Sample Post",
+        detailedCaption: "Sample description",
+        subject: "study",
         location: "London",
-        source: .reddit,
-        originalUrl: "",
         createdAt: Date(),
-        isOnline: false
+        likes: 0,
+        comments: [],
     ))
     .environmentObject(PostStore())
+    .environmentObject(UserStore())
 } 
