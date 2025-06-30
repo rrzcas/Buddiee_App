@@ -83,14 +83,18 @@ struct CommentRowView: View {
     CommentsView(post: Post(
         id: UUID(),
         userId: "sampleUserId",
+        username: "Sample User",
         photos: ["sample_image_url"],
         mainCaption: "Sample Post",
         detailedCaption: "Sample description",
         subject: "study",
         location: "London",
+        userLocation: nil,
         createdAt: Date(),
         likes: 0,
         comments: [],
+        isPrivate: false,
+        isPinned: false
     ))
     .environmentObject(PostStore())
     .environmentObject(UserStore())

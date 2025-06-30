@@ -36,7 +36,7 @@ struct EditPostView: View {
                         .background(Color.blue.opacity(0.1))
                         .cornerRadius(10)
                     }
-                    .onChange(of: photoPickerItems) { newItems in
+                    .onChange(of: photoPickerItems) { _, newItems in
                         Task {
                             selectedImages = []
                             for item in newItems.prefix(6) {
@@ -104,16 +104,20 @@ struct EditPostView: View {
         let updatedPost = Post(
             id: post.id,
             userId: post.userId,
+            username: post.username,
             photos: imageURLs,
             mainCaption: mainCaption,
             detailedCaption: detailedCaption,
             subject: subject,
             location: post.location,
+            userLocation: post.userLocation,
             createdAt: post.createdAt,
             likes: post.likes,
-            comments: post.comments
+            comments: post.comments,
+            isPrivate: post.isPrivate,
+            isPinned: post.isPinned
         )
-        postStore.createPost(updatedPost) // or update logic as needed
+        postStore.updatePost(updatedPost)
         dismiss()
     }
 }
@@ -122,11 +126,13 @@ struct EditPostView: View {
     EditPostView(post: Post(
         id: UUID(),
         userId: "userId",
+        username: "Sample User",
         photos: [],
         mainCaption: "Sample Post",
         detailedCaption: "Sample description",
         subject: "study",
         location: "London",
+        userLocation: nil,
         createdAt: Date(),
         likes: 0,
         comments: []

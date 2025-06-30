@@ -42,12 +42,14 @@ struct FilterButton: View {
 }
 
 struct ContentView: View {
-    @StateObject var postStore = PostStore()
-    @StateObject var userStore = UserStore()
+    @EnvironmentObject var postStore: PostStore
+    @EnvironmentObject var userStore: UserStore
     @StateObject var messageStore = MessageStore()
     @StateObject var locationStore = LocationStore()
     @StateObject var historyStore = BrowsingHistoryStore()
     @State private var selectedTab = 0
+    @State private var showingCreateOptions = false
+    @State private var shouldNavigateToFeed = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -59,12 +61,15 @@ struct ContentView: View {
                 Text("Posts")
             }
             .tag(0)
-            CreatePostView()
+            
+            // Create Post Button View
+            CreatePostButtonView(showingCreateOptions: $showingCreateOptions)
                 .tabItem {
                     Image(systemName: "plus.circle.fill")
                     Text("Create")
                 }
                 .tag(1)
+            
             LocationView()
                 .tabItem {
                     Image(systemName: "map.fill")
@@ -77,7 +82,7 @@ struct ContentView: View {
                     Text("Messages")
                 }
                 .tag(3)
-            ProfileView(user: User(id: "userId", username: "TestUser", profilePicture: nil, bio: "Test bio"))
+            ProfileView(user: userStore.currentUser ?? User(id: "default", username: "Default User", profilePicture: nil, bio: "Default bio"))
                 .tabItem {
                     Image(systemName: "person.fill")
                     Text("Profile")
@@ -89,6 +94,206 @@ struct ContentView: View {
         .environmentObject(messageStore)
         .environmentObject(locationStore)
         .environmentObject(historyStore)
+        .sheet(isPresented: $showingCreateOptions) {
+            CreatePostOptionsView(shouldNavigateToFeed: $shouldNavigateToFeed, showingCreateOptions: $showingCreateOptions)
+        }
+        .onChange(of: shouldNavigateToFeed) { _, newValue in
+            if newValue {
+                showingCreateOptions = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    selectedTab = 0
+                    shouldNavigateToFeed = false
+                }
+            }
+        }
+    }
+}
+
+// Create Post Button View
+struct CreatePostButtonView: View {
+    @Binding var showingCreateOptions: Bool
+    
+    var body: some View {
+        VStack {
+            Spacer()
+            
+            Button(action: {
+                showingCreateOptions = true
+            }) {
+                VStack(spacing: 12) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.blue)
+                    
+                    Text("Create Post")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                }
+            }
+            .buttonStyle(ScaleButtonStyle())
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
+    }
+}
+
+// Create Post Options Overlay View
+struct CreatePostOptionsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingPhotoPost = false
+    @State private var showingTextPost = false
+    @Binding var shouldNavigateToFeed: Bool
+    @Binding var showingCreateOptions: Bool
+    
+    var body: some View {
+        ZStack {
+            // Dark background
+            Color.black.opacity(0.8)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    dismiss()
+                }
+            
+            VStack(spacing: 30) {
+                Spacer()
+                
+                // Photo Post Option (Bigger button)
+                Button(action: {
+                    showingPhotoPost = true
+                }) {
+                    VStack(spacing: 16) {
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .font(.system(size: 50))
+                            .foregroundColor(.white)
+                        
+                        VStack(spacing: 8) {
+                            Text("Post with Photos")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                            
+                            Text("(Recommended)")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
+                    .background(Color.blue)
+                    .cornerRadius(20)
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .padding(.horizontal, 40)
+                
+                // Text Post Option (Smaller button)
+                Button(action: {
+                    showingTextPost = true
+                }) {
+                    VStack(spacing: 12) {
+                        Image(systemName: "text.quote")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                        
+                        Text("Post with Text")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 25)
+                    .background(Color.gray)
+                    .cornerRadius(15)
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .padding(.horizontal, 60)
+                
+                Spacer()
+            }
+        }
+        .sheet(isPresented: $showingPhotoPost) {
+            PostCreationView(shouldNavigateToFeed: $shouldNavigateToFeed, showingCreateOptions: $showingCreateOptions)
+        }
+        .sheet(isPresented: $showingTextPost) {
+            TextOnlyPostView(shouldNavigateToFeed: $shouldNavigateToFeed, showingCreateOptions: $showingCreateOptions)
+        }
+    }
+}
+
+// Text Only Post View
+struct TextOnlyPostView: View {
+    @EnvironmentObject var postStore: PostStore
+    @EnvironmentObject var userStore: UserStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var title: String = ""
+    @State private var content: String = ""
+    @State private var selectedCategory: ActivityCategory = .study
+    @State private var showSuccessAlert = false
+    @Binding var shouldNavigateToFeed: Bool
+    @Binding var showingCreateOptions: Bool
+    
+    private func createTextPost() {
+        let newPost = Post(
+            id: UUID(),
+            userId: userStore.currentUser?.id ?? "",
+            username: userStore.currentUser?.username ?? "Unknown User",
+            photos: [],
+            mainCaption: title,
+            detailedCaption: content,
+            subject: selectedCategory.rawValue,
+            location: userStore.currentUser?.bio,
+            userLocation: nil,
+            createdAt: Date(),
+            likes: 0,
+            comments: [],
+            isPrivate: false,
+            isPinned: false
+        )
+        postStore.createPost(newPost)
+        showSuccessAlert = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            shouldNavigateToFeed = true
+            showingCreateOptions = false
+            dismiss()
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Post Details")) {
+                    TextField("Title", text: $title)
+                    TextEditor(text: $content)
+                        .frame(height: 150)
+                    
+                    Picker("Category", selection: $selectedCategory) {
+                        ForEach(ActivityCategory.allCases, id: \.self) { category in
+                            Text(category.rawValue.capitalized).tag(category)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Text Post")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Post") {
+                        createTextPost()
+                    }
+                    .disabled(title.isEmpty || content.isEmpty)
+                }
+            }
+            .alert("POSTED SUCCESSFULLY!!!", isPresented: $showSuccessAlert) {
+                Button("OK", role: .cancel) { }
+            }
+        }
     }
 }
 
@@ -96,12 +301,6 @@ struct ContentView: View {
 struct PostsFeedView_TabPlaceholder: View {
     var body: some View {
         Text("Posts Feed")
-    }
-}
-
-struct CreatePostView: View {
-    var body: some View {
-        Text("Create Post")
     }
 }
 

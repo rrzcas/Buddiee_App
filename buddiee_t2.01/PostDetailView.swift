@@ -16,22 +16,47 @@ struct PostDetailView: View {
                 if !post.photos.isEmpty {
                     TabView {
                         ForEach(post.photos, id: \.self) { photoURL in
-                            if let url = URL(string: photoURL) {
-                                AsyncImage(url: url) { image in
-                                    image
+                            if photoURL.hasPrefix("file://") {
+                                // Handle local file URLs
+                                if let url = URL(string: photoURL),
+                                   let imageData = try? Data(contentsOf: url),
+                                   let uiImage = UIImage(data: imageData) {
+                                    Image(uiImage: uiImage)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
-                                } placeholder: {
-                                    ProgressView()
+                                } else {
+                                    fallbackImageView
                                 }
+                            } else if photoURL.hasPrefix("http") {
+                                // Handle external URLs
+                                if let url = URL(string: photoURL) {
+                                    AsyncImage(url: url) { phase in
+                                        switch phase {
+                                        case .success(let image):
+                                            image
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                        case .failure(_):
+                                            fallbackImageView
+                                        case .empty:
+                                            ProgressView()
+                                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        @unknown default:
+                                            fallbackImageView
+                                        }
+                                    }
+                                } else {
+                                    fallbackImageView
+                                }
+                            } else {
+                                fallbackImageView
                             }
                         }
                     }
                     .tabViewStyle(.page)
                     .frame(height: 300)
                 } else {
-                    Color.gray.opacity(0.1)
-                        .frame(height: 300)
+                    fallbackImageView
                 }
                 
                 // Content below image
@@ -44,7 +69,7 @@ struct PostDetailView: View {
                     // User Info and other details
                     HStack {
                         Image(systemName: "person.circle.fill")
-                        Text("User") // Placeholder
+                        Text(post.username)
                         Spacer()
                         Text(post.createdAt, style: .relative)
                     }
@@ -115,6 +140,20 @@ struct PostDetailView: View {
         newComment = ""
         showingCommentAlert = true
     }
+    
+    private var fallbackImageView: some View {
+        VStack {
+            Image(systemName: "photo")
+                .font(.system(size: 50))
+                .foregroundColor(.gray)
+            Text("No Image")
+                .font(.caption)
+                .foregroundColor(.gray)
+        }
+        .frame(height: 300)
+        .frame(maxWidth: .infinity)
+        .background(Color.gray.opacity(0.1))
+    }
 }
 
 struct CommentView: View {
@@ -123,7 +162,7 @@ struct CommentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("User Info Placeholder")
+                Text(comment.username)
                     .font(.subheadline)
                     .bold()
                 
@@ -146,11 +185,13 @@ struct CommentView: View {
         PostDetailView(post: Post(
             id: UUID(),
             userId: "userId",
+            username: "Sample User",
             photos: [],
             mainCaption: "Sample Post",
             detailedCaption: "Sample description",
             subject: "study",
             location: "London",
+            userLocation: nil,
             createdAt: Date(),
             likes: 0,
             comments: []

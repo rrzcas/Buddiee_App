@@ -11,7 +11,27 @@ struct PostCard: View {
                 TabView(selection: $currentImageIndex) {
                     ForEach(0..<post.photos.count, id: \.self) {
                         index in
-                        if let url = URL(string: post.photos[index]) {
+                        let photoURL = post.photos[index]
+                        if photoURL.hasPrefix("file://") {
+                            // Handle local file URLs
+                            if let url = URL(string: photoURL),
+                               let imageData = try? Data(contentsOf: url),
+                               let uiImage = UIImage(data: imageData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity, maxHeight: 200)
+                                    .clipped()
+                                    .tag(index)
+                            } else {
+                                Image(systemName: "photo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxWidth: .infinity, maxHeight: 200)
+                                    .foregroundColor(.gray)
+                                    .tag(index)
+                            }
+                        } else if let url = URL(string: photoURL) {
                             AsyncImage(url: url) {
                                 phase in
                                 switch phase {
@@ -42,6 +62,7 @@ struct PostCard: View {
                                 .scaledToFit()
                                 .frame(maxWidth: .infinity, maxHeight: 200)
                                 .foregroundColor(.gray)
+                                .tag(index)
                         }
                     }
                 }
@@ -90,11 +111,13 @@ struct PostCard_Previews: PreviewProvider {
         PostCard(post: Post(
             id: UUID(),
             userId: "userId",
+            username: "Sample User",
             photos: [],
             mainCaption: "Sample Post",
             detailedCaption: "Sample description",
             subject: "study",
             location: "London",
+            userLocation: nil,
             createdAt: Date(),
             likes: 0,
             comments: []

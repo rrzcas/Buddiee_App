@@ -14,26 +14,50 @@ struct PostCard1: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Cover Image
-            if let firstImage = post.photos.first, let imageUrl = URL(string: firstImage) {
-                AsyncImage(url: imageUrl) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
+            if let firstImage = post.photos.first {
+                if firstImage.hasPrefix("file://") {
+                    // Handle local file URLs
+                    if let url = URL(string: firstImage),
+                       let imageData = try? Data(contentsOf: url),
+                       let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .frame(height: 250)
                             .clipped()
-                    case .failure(_):
-                        Image(systemName: "photo")
-                            .frame(height: 250)
-                    default:
-                        ProgressView()
-                            .frame(height: 250)
+                    } else {
+                        fallbackImageView
                     }
+                } else if firstImage.hasPrefix("http") {
+                    // Handle external URLs
+                    if let imageUrl = URL(string: firstImage) {
+                        AsyncImage(url: imageUrl) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(height: 250)
+                                    .clipped()
+                            case .failure(_):
+                                fallbackImageView
+                            case .empty:
+                                ProgressView()
+                                    .frame(height: 250)
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.gray.opacity(0.1))
+                            @unknown default:
+                                fallbackImageView
+                            }
+                        }
+                    } else {
+                        fallbackImageView
+                    }
+                } else {
+                    fallbackImageView
                 }
             } else {
-                Color.gray.opacity(0.1)
-                    .frame(height: 250)
+                fallbackImageView
             }
             
             // Content below image
@@ -48,17 +72,35 @@ struct PostCard1: View {
                         .foregroundColor(.gray)
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("User") // Placeholder, you can fetch user info later
-                            .font(.headline)
+                        HStack {
+                            Text(post.username)
+                                .font(.headline)
+                            
+                            // Privacy indicator
+                            if post.isPrivate {
+                                Image(systemName: "eye.slash.fill")
+                                    .foregroundColor(.gray)
+                                    .font(.caption)
+                            }
+                            
+                            // Pinned indicator
+                            if post.isPinned {
+                                Image(systemName: "pin.fill")
+                                    .foregroundColor(.blue)
+                                    .font(.caption)
+                            }
+                        }
+                        
                         Text(post.location ?? "Unknown location")
                             .font(.caption)
                             .foregroundColor(.gray)
                     }
                     Spacer()
-                    Button(action: {}) {
-                        Image(systemName: "ellipsis")
-                            .foregroundColor(.primary)
-                    }
+                    
+                    // Post age
+                    Text(post.createdAt, style: .relative)
+                        .font(.caption)
+                        .foregroundColor(.gray)
                 }
                 
                 // Main Caption (Title)
@@ -71,6 +113,48 @@ struct PostCard1: View {
                     .font(.body)
                     .lineLimit(2)
                     .foregroundColor(.secondary)
+                
+                // Location
+                if let location = post.location {
+                    Label(location, systemImage: "mappin.and.ellipse")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                // Meeting Location
+                if let userLocation = post.userLocation {
+                    Label("Meet at: \(userLocation)", systemImage: "location.circle.fill")
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                }
+                
+                // Interaction buttons
+                HStack(spacing: 20) {
+                    Button(action: {
+                        postStore.likePost(post)
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "heart")
+                                .foregroundColor(.red)
+                            Text("\(post.likes)")
+                                .font(.caption)
+                        }
+                    }
+                    
+                    Button(action: {
+                        showingComments = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "message")
+                                .foregroundColor(.blue)
+                            Text("\(post.comments.count)")
+                                .font(.caption)
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .foregroundColor(.primary)
 
             }.padding()
         }
@@ -91,6 +175,20 @@ struct PostCard1: View {
             }
         }
     }
+    
+    private var fallbackImageView: some View {
+        VStack {
+            Image(systemName: "photo")
+                .font(.system(size: 50))
+                .foregroundColor(.gray)
+            Text("No Image")
+                .font(.caption)
+                .foregroundColor(.gray)
+        }
+        .frame(height: 250)
+        .frame(maxWidth: .infinity)
+        .background(Color.gray.opacity(0.1))
+    }
 }
 
 // MARK: - Preview
@@ -99,11 +197,13 @@ struct PostCard1_Previews: PreviewProvider {
         PostCard1(post: Post(
             id: UUID(),
             userId: "userId",
+            username: "Sample User",
             photos: ["https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=2787&auto=format&fit=crop"],
             mainCaption: "Sample Post",
             detailedCaption: "This is a sample description that shows how the text will look. It can be a bit long but it will be truncated.",
             subject: "study",
             location: "London",
+            userLocation: nil,
             createdAt: Date(),
             likes: 10,
             comments: []

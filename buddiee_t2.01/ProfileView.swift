@@ -114,12 +114,25 @@ struct PostMenuView: View {
             Button(action: onEdit) {
                 Label("Edit", systemImage: "pencil")
             }
-            Button(action: onPin) {
-                Label("Pin to Top", systemImage: "pin.fill")
+            
+            if post.isPinned {
+                Button(action: onPin) {
+                    Label("Unpin", systemImage: "pin.slash")
+                }
+            } else {
+                Button(action: onPin) {
+                    Label("Pin to Top", systemImage: "pin.fill")
+                }
             }
+            
             Button(action: onTogglePrivacy) {
-                Label("Set to Private", systemImage: "eye.slash.fill")
+                if post.isPrivate {
+                    Label("Make Public", systemImage: "eye.fill")
+                } else {
+                    Label("Make Private", systemImage: "eye.slash.fill")
+                }
             }
+            
             Button(role: .destructive, action: onDelete) {
                 Label("Delete", systemImage: "trash")
             }
@@ -139,10 +152,34 @@ struct PostMenuView: View {
 struct ProfileView: View {
     let user: User
     @EnvironmentObject private var postStore: PostStore
+    @EnvironmentObject private var userStore: UserStore
     @State private var showingEditProfile = false
+    @State private var showingSettings = false
+    @State private var showingEditPost = false
+    @State private var selectedPost: Post?
+    @State private var showingDeleteAlert = false
+    @State private var postToDelete: Post?
+    
+    private var isCurrentUser: Bool {
+        user.id == userStore.currentUser?.id
+    }
     
     private var userPosts: [Post] {
-        postStore.posts.filter { $0.userId == user.id }
+        let posts = postStore.getUserPosts(for: user.id)
+        return posts.sorted { post1, post2 in
+            // Sort by pinned status first, then by creation date
+            if post1.isPinned && !post2.isPinned {
+                return true
+            } else if !post1.isPinned && post2.isPinned {
+                return false
+            } else {
+                return post1.createdAt > post2.createdAt
+            }
+        }
+    }
+    
+    private var pinnedPost: Post? {
+        postStore.getPinnedPost(for: user.id)
     }
     
     var body: some View {
@@ -150,6 +187,18 @@ struct ProfileView: View {
             VStack(spacing: 20) {
                 // Profile Header
                 VStack(spacing: 16) {
+                    HStack {
+                        Spacer()
+                        if isCurrentUser {
+                            Button(action: { showingSettings = true }) {
+                                Image(systemName: "gearshape.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                    
                     Image(systemName: user.profilePicture ?? "person.circle")
                         .resizable()
                         .scaledToFill()
@@ -167,6 +216,18 @@ struct ProfileView: View {
                             .foregroundColor(.gray)
                     }
                     
+                    if isCurrentUser {
+                        Button(action: { showingEditProfile = true }) {
+                            Label("Edit Profile", systemImage: "pencil")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                        }
+                        .padding(.horizontal)
+                    }
+                    
                     // Bio Section
                     VStack(alignment: .leading, spacing: 8) {
                         Text("About")
@@ -181,10 +242,35 @@ struct ProfileView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal)
                     
-                    // Optional Interests Section
-                    // if let interests = user.interests, !interests.isEmpty {
-                    //     ...
-                    // }
+                    // Pinned Post Section (if exists)
+                    if let pinned = pinnedPost {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "pin.fill")
+                                    .foregroundColor(.blue)
+                                Text("Pinned Post")
+                                    .font(.headline)
+                                    .foregroundColor(.blue)
+                            }
+                            
+                            PostCard1(post: pinned)
+                                .overlay(alignment: .topTrailing) {
+                                    if isCurrentUser {
+                                        PostMenuView(
+                                            post: pinned,
+                                            onEdit: { selectedPost = pinned },
+                                            onPin: { postStore.pinPost(pinned) },
+                                            onTogglePrivacy: { postStore.togglePostPrivacy(pinned) },
+                                            onDelete: { 
+                                                postToDelete = pinned
+                                                showingDeleteAlert = true
+                                            }
+                                        )
+                                    }
+                                }
+                        }
+                        .padding(.horizontal)
+                    }
                 }
                 .padding()
                 
@@ -198,28 +284,49 @@ struct ProfileView: View {
                     if userPosts.isEmpty {
                         Text("No posts yet")
                             .foregroundColor(.gray)
-                            .frame(maxWidth: .infinity, alignment: .center)
                             .padding()
                     } else {
                         ForEach(userPosts) { post in
                             PostCard1(post: post)
+                                .overlay(alignment: .topTrailing) {
+                                    if isCurrentUser {
+                                        PostMenuView(
+                                            post: post,
+                                            onEdit: { selectedPost = post },
+                                            onPin: { postStore.pinPost(post) },
+                                            onTogglePrivacy: { postStore.togglePostPrivacy(post) },
+                                            onDelete: { 
+                                                postToDelete = post
+                                                showingDeleteAlert = true
+                                            }
+                                        )
+                                    }
+                                }
                         }
                     }
                 }
+                .padding(.horizontal)
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showingEditProfile = true }) {
-                    Image(systemName: "pencil")
+        .navigationTitle("Profile")
+        .sheet(isPresented: $showingEditProfile) {
+            EditProfileView(user: user)
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+        }
+        .sheet(item: $selectedPost) { post in
+            EditPostView(post: post)
+        }
+        .alert("Delete Post", isPresented: $showingDeleteAlert) {
+            Button("Delete", role: .destructive) {
+                if let post = postToDelete {
+                    postStore.deletePost(post)
                 }
             }
-        }
-        .sheet(isPresented: $showingEditProfile) {
-            NavigationView {
-                EditProfileView(user: user)
-            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to delete this post? This action cannot be undone.")
         }
     }
 }
