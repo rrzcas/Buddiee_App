@@ -376,7 +376,18 @@ struct PhotoStepView: View {
             Text("Select 1-6 related photos")
                 .font(.headline)
             Button(action: {
-                showPhotoPicker = true
+                let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+                if status == .authorized || status == .limited {
+                    showPhotoPicker = true
+                } else if status == .notDetermined {
+                    PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
+                        DispatchQueue.main.async {
+                            if newStatus == .authorized || newStatus == .limited {
+                                showPhotoPicker = true
+                            }
+                        }
+                    }
+                }
             }) {
                 HStack {
                     Image(systemName: "photo.on.rectangle")
@@ -419,7 +430,8 @@ struct PhotoStepView: View {
                     }
                 }
             }
-        }.padding()
+        }
+        .padding()
     }
     private func loadSelectedImages(_ items: [PhotosPickerItem], completion: @escaping ([UIImage]) -> Void) {
         print("loadSelectedImages called with \(items.count) items [PhotoStepView]")
