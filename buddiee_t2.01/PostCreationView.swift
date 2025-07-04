@@ -59,29 +59,27 @@ struct FirstPostCreationFlow: View {
                     reviewStep
                 }
                 Spacer()
-                if step != .photos {
-                    HStack {
-                        if step != .photos {
-                            Button("Back") { withAnimation { previousStep() } }
-                                .padding()
-                        }
-                        Spacer()
-                        Button(action: {
-                            print("[BUTTON] Continue tapped, step: \(step), isStepComplete: \(isStepComplete)")
-                            withAnimation { nextStep() }
-                        }) {
-                            Text(step == .review ? "Post to find your buddy now!" : "Continue")
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(isStepComplete ? Color.blue : Color.gray)
-                                .cornerRadius(12)
-                        }
-                        .disabled(!isStepComplete || isLoading)
+                HStack {
+                    if step != .photos {
+                        Button("Back") { withAnimation { previousStep() } }
+                            .padding()
                     }
-                    .padding()
+                    Spacer()
+                    Button(action: {
+                        print("[BUTTON] Continue tapped, step: \(step), isStepComplete: \(isStepComplete)")
+                        withAnimation { nextStep() }
+                    }) {
+                        Text(step == .review ? "Post to find your buddy now!" : "Continue")
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(isStepComplete ? Color.blue : Color.gray)
+                            .cornerRadius(12)
+                    }
+                    .disabled(!isStepComplete || isLoading)
                 }
+                .padding()
             }
             .navigationTitle("Create First Post")
             .alert(isPresented: $postSuccess) {
@@ -91,85 +89,14 @@ struct FirstPostCreationFlow: View {
     }
     // MARK: - Step Views
     private var photoStep: some View {
-        VStack(spacing: 20) {
-            // TEST BUTTON
-            Button("Test Button") {
-                print("[TEST BUTTON] tapped!")
-            }
-            .padding()
-            .background(Color.green.opacity(0.2))
-            .cornerRadius(8)
-            // END TEST BUTTON
-            Text("Select 1-6 related photos")
-                .font(.headline)
-            Button(action: {
-                showPhotoPicker = true
-            }) {
-                HStack {
-                    Image(systemName: "photo.on.rectangle")
-                    Text("Pick Photos")
-                }
-                .padding()
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(10)
-            }
-            .disabled(false)
-            .photosPicker(isPresented: $showPhotoPicker, selection: $postPhotoPickerItems, maxSelectionCount: 6, matching: .images)
-            .onAppear {
-                PHPhotoLibrary.requestAuthorization { status in
-                    print("Photo library authorization status: \(status.rawValue)")
-                    if status == .authorized || status == .limited {
-                        DispatchQueue.main.async {
-                            showPhotoPicker = true
-                        }
-                    }
-                }
-            }
-            .onChange(of: postPhotoPickerItems) { _, newItems in
-                isLoadingImages = true
-                loadSelectedImages(newItems) { images in
-                    postSelectedImages = images
-                    isLoadingImages = false
-                    uiUpdateTrigger.toggle()
-                }
-            }
-            if isLoadingImages {
-                ProgressView("Loading photos...")
-            }
-            if postSelectedImages.isEmpty && photoError != nil {
-                HStack(spacing: 4) {
-                    Text("required").foregroundColor(.red).font(.caption)
-                }
-            }
-            if let error = photoError {
-                Text(error).foregroundColor(.red).font(.caption)
-            }
-            if !postSelectedImages.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        ForEach(postSelectedImages, id: \ .self) { img in
-                            Image(uiImage: img)
-                                .resizable()
-                                .frame(width: 80, height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                        }
-                    }
-                }
-            }
-            Button(action: {
-                print("[BUTTON] Continue tapped, step: \(step), isStepComplete: \(isStepComplete)")
-                withAnimation { nextStep() }
-            }) {
-                Text(step == .review ? "Post to find your buddy now!" : "Continue")
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(isStepComplete ? Color.blue : Color.gray)
-                    .cornerRadius(12)
-            }
-            .disabled(!isStepComplete || isLoading)
-        }.padding()
+        PhotoStepView(
+            postSelectedImages: $postSelectedImages,
+            postPhotoPickerItems: $postPhotoPickerItems,
+            isLoadingImages: $isLoadingImages,
+            uiUpdateTrigger: $uiUpdateTrigger,
+            photoError: $photoError,
+            showPhotoPicker: $showPhotoPicker
+        )
     }
     private var detailsStep: some View {
         VStack(spacing: 20) {
@@ -433,6 +360,81 @@ struct FirstPostCreationFlow: View {
             postStore.createPost(newPost)
             isLoading = false
             postSuccess = true
+        }
+    }
+}
+
+struct PhotoStepView: View {
+    @Binding var postSelectedImages: [UIImage]
+    @Binding var postPhotoPickerItems: [PhotosPickerItem]
+    @Binding var isLoadingImages: Bool
+    @Binding var uiUpdateTrigger: Bool
+    @Binding var photoError: String?
+    @Binding var showPhotoPicker: Bool
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Select 1-6 related photos")
+                .font(.headline)
+            Button(action: {
+                showPhotoPicker = true
+            }) {
+                HStack {
+                    Image(systemName: "photo.on.rectangle")
+                    Text("Pick Photos")
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(10)
+            }
+            .disabled(false)
+            .photosPicker(isPresented: $showPhotoPicker, selection: $postPhotoPickerItems, maxSelectionCount: 6, matching: .images)
+            .onChange(of: postPhotoPickerItems) { _, newItems in
+                isLoadingImages = true
+                loadSelectedImages(newItems) { images in
+                    postSelectedImages = images
+                    isLoadingImages = false
+                    uiUpdateTrigger.toggle()
+                }
+            }
+            if isLoadingImages {
+                ProgressView("Loading photos...")
+            }
+            if postSelectedImages.isEmpty && photoError != nil {
+                HStack(spacing: 4) {
+                    Text("required").foregroundColor(.red).font(.caption)
+                }
+            }
+            if let error = photoError {
+                Text(error).foregroundColor(.red).font(.caption)
+            }
+            if !postSelectedImages.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack {
+                        ForEach(postSelectedImages, id: \ .self) { img in
+                            Image(uiImage: img)
+                                .resizable()
+                                .frame(width: 80, height: 80)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                    }
+                }
+            }
+        }.padding()
+    }
+    private func loadSelectedImages(_ items: [PhotosPickerItem], completion: @escaping ([UIImage]) -> Void) {
+        print("loadSelectedImages called with \(items.count) items [PhotoStepView]")
+        Task {
+            var loadedImages: [UIImage] = []
+            for item in items {
+                if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
+                    loadedImages.append(img)
+                    print("Appended image, loadedImages count: \(loadedImages.count) [PhotoStepView]")
+                }
+            }
+            DispatchQueue.main.async {
+                print("selectedImages after async load: \(loadedImages.count) [PhotoStepView]")
+                completion(loadedImages)
+            }
         }
     }
 }
