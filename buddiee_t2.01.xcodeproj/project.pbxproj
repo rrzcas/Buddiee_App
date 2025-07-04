@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		18E7622C2E1438DC00DA1B34 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 18E7622B2E1438DC00DA1B34 /* Auth */; };
+		18E7622E2E1438DC00DA1B34 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 18E7622D2E1438DC00DA1B34 /* Functions */; };
+		18E762302E1438DC00DA1B34 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 18E7622F2E1438DC00DA1B34 /* PostgREST */; };
+		18E762322E1438DC00DA1B34 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 18E762312E1438DC00DA1B34 /* Realtime */; };
+		18E762342E1438DC00DA1B34 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 18E762332E1438DC00DA1B34 /* Storage */; };
+		18E762362E1438DC00DA1B34 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 18E762352E1438DC00DA1B34 /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		18E2AE8C2DF45C7A00840180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +74,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				18E762302E1438DC00DA1B34 /* PostgREST in Frameworks */,
+				18E7622E2E1438DC00DA1B34 /* Functions in Frameworks */,
+				18E762362E1438DC00DA1B34 /* Supabase in Frameworks */,
+				18E7622C2E1438DC00DA1B34 /* Auth in Frameworks */,
+				18E762342E1438DC00DA1B34 /* Storage in Frameworks */,
+				18E762322E1438DC00DA1B34 /* Realtime in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +140,12 @@
 			);
 			name = buddiee_t2.01;
 			packageProductDependencies = (
+				18E7622B2E1438DC00DA1B34 /* Auth */,
+				18E7622D2E1438DC00DA1B34 /* Functions */,
+				18E7622F2E1438DC00DA1B34 /* PostgREST */,
+				18E762312E1438DC00DA1B34 /* Realtime */,
+				18E762332E1438DC00DA1B34 /* Storage */,
+				18E762352E1438DC00DA1B34 /* Supabase */,
 			);
 			productName = buddiee_t2.01;
 			productReference = 18E2AE7D2DF45C7600840180 /* buddiee_t2.01.app */;
@@ -208,6 +229,9 @@
 			);
 			mainGroup = 18E2AE742DF45C7600840180;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				18E7622A2E1438DC00DA1B34 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 18E2AE7E2DF45C7600840180 /* Products */;
 			projectDirPath = "";
@@ -410,6 +434,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to find buddies nearby";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Buddiee needs access to your photo library to allow you to select images for your posts.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -450,6 +475,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to find buddies nearby";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Buddiee needs access to your photo library to allow you to select images for your posts.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -608,6 +634,50 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		18E7622A2E1438DC00DA1B34 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		18E7622B2E1438DC00DA1B34 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18E7622A2E1438DC00DA1B34 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		18E7622D2E1438DC00DA1B34 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18E7622A2E1438DC00DA1B34 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		18E7622F2E1438DC00DA1B34 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18E7622A2E1438DC00DA1B34 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		18E762312E1438DC00DA1B34 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18E7622A2E1438DC00DA1B34 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		18E762332E1438DC00DA1B34 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18E7622A2E1438DC00DA1B34 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		18E762352E1438DC00DA1B34 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18E7622A2E1438DC00DA1B34 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 18E2AE752DF45C7600840180 /* Project object */;
 }

@@ -160,7 +160,7 @@ struct LocationFinderView: View {
                     Button(action: {
                         // Center map on user location
                         if let userLocation = locationManager.userLocation {
-                            region.center = userLocation
+                            region.center = userLocation.coordinate
                         }
                     }) {
                         Image(systemName: "location.fill")
@@ -250,7 +250,7 @@ struct LocationFinderView: View {
         guard let userLocation = locationManager.userLocation else {
             return "Unknown distance"
         }
-        let userLoc = CLLocation(latitude: userLocation.latitude, longitude: userLocation.longitude)
+        let userLoc = CLLocation(latitude: userLocation.coordinate.latitude, longitude: userLocation.coordinate.longitude)
         let postCoordinate = getCoordinate(for: post)
         let distance = userLoc.distance(from: CLLocation(latitude: postCoordinate.latitude, longitude: postCoordinate.longitude))
         if distance < 1000 {

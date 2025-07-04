@@ -2,311 +2,340 @@ import SwiftUI
 import PhotosUI
 import Photos
 
-struct PostCreationView: View {
+enum PostCreationStep {
+    case photos, details, profile, verify, review
+}
+
+struct FirstPostCreationFlow: View {
     @EnvironmentObject var postStore: PostStore
     @EnvironmentObject var userStore: UserStore
     @Environment(\.dismiss) private var dismiss
+    @State private var step: PostCreationStep = .photos
+    // Step 1: Photos
     @State private var selectedImages: [UIImage] = []
+    @State private var photoPickerItems: [PhotosPickerItem] = []
+    @State private var photoError: String? = nil
+    // Step 2: Details
     @State private var title: String = ""
     @State private var content: String = ""
-    @State private var selectedCategory: ActivityCategory = .study
-    @State private var photoPickerItems: [PhotosPickerItem] = []
-    @State private var isLoadingImages = false
-    @State private var showSuccessAlert = false
-    @State private var currentImageIndex = 0
-    @State private var showingPhotoPicker = false
-    @State private var selectedLocation: String?
-    @State private var showingLocationPicker = false
-    @Binding var shouldNavigateToFeed: Bool
-    @Binding var showingCreateOptions: Bool
-
-    private func saveImageToFileSystem(image: UIImage) -> URL? {
-        guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
-        
-        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let fileName = "\(UUID().uuidString).jpg"
-        let fileURL = documentsDirectory.appendingPathComponent(fileName)
-        
-        do {
-            try data.write(to: fileURL)
-            return fileURL
-        } catch {
-            print("Error saving image: \(error)")
-            return nil
-        }
-    }
-
-    private func createPost() {
-        let imageURLs = selectedImages.compactMap { saveImageToFileSystem(image: $0)?.absoluteString }
-        
-        let newPost = Post(
-            id: UUID(),
-            userId: userStore.currentUser?.id ?? "",
-            username: userStore.currentUser?.username ?? "Unknown User",
-            photos: imageURLs,
-            mainCaption: title,
-            detailedCaption: content,
-            subject: selectedCategory.rawValue,
-            location: userStore.currentUser?.bio,
-            userLocation: selectedLocation,
-            createdAt: Date(),
-            likes: 0,
-            comments: [],
-            isPrivate: false,
-            isPinned: false
-        )
-        postStore.createPost(newPost)
-        showSuccessAlert = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            shouldNavigateToFeed = true
-            showingCreateOptions = false
-            dismiss()
-        }
-        resetFields()
-    }
-    
-    private func resetFields() {
-        title = ""
-        content = ""
-        selectedImages = []
-        selectedCategory = .study
-        photoPickerItems = []
-        currentImageIndex = 0
-        selectedLocation = nil
-    }
-
+    @State private var selectedCategory: String = "Study"
+    @State private var detailsError: String? = nil
+    // Step 3: Profile
+    @State private var selectedIcon: String = "person.circle"
+    @State private var username: String = ""
+    @State private var uuid: String = UUID().uuidString
+    @State private var uuidError: String? = nil
+    // Step 4: Verification
+    @State private var verificationMethod: String? = nil
+    @State private var email: String = ""
+    @State private var code: String = ""
+    @State private var verificationError: String? = nil
+    @State private var isLoading = false
+    // Step 5: Review & Post
+    @State private var postError: String? = nil
+    @State private var postSuccess = false
+    // Helper
+    let hobbyOptions = ["Study", "Light Trekking", "Photography", "Gym", "Day Outing", "Others"]
+    let iconOptions = ["person.circle", "person.circle.fill", "person.crop.circle", "person.crop.circle.fill", "person.2.circle", "person.2.circle.fill"]
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Photo Preview Section
-                if !selectedImages.isEmpty {
-                    photoPreviewSection
-                } else {
-                    photoSelectionSection
+            VStack {
+                switch step {
+                case .photos:
+                    photoStep
+                case .details:
+                    detailsStep
+                case .profile:
+                    profileStep
+                case .verify:
+                    verifyStep
+                case .review:
+                    reviewStep
                 }
-                
-                // Post Details Section
-                postDetailsSection
-            }
-            .navigationTitle("Create Post")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                Spacer()
+                HStack {
+                    if step != .photos {
+                        Button("Back") { withAnimation { previousStep() } }
+                            .padding()
                     }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Post") {
-                        createPost()
+                    Spacer()
+                    Button(action: { withAnimation { nextStep() } }) {
+                        Text(step == .review ? "Post to find your buddy now!" : "Continue")
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(isStepComplete ? Color.blue : Color.gray)
+                            .cornerRadius(12)
                     }
-                    .disabled(title.isEmpty || content.isEmpty || selectedImages.isEmpty)
+                    .disabled(!isStepComplete || isLoading)
                 }
+                .padding()
             }
-            .alert("POSTED SUCCESSFULLY!!!", isPresented: $showSuccessAlert) {
-                Button("OK", role: .cancel) { }
+            .navigationTitle("Create First Post")
+            .alert(isPresented: $postSuccess) {
+                Alert(title: Text("Success!"), message: Text("Your account and post have been created."), dismissButton: .default(Text("OK"), action: { dismiss() }))
             }
         }
     }
-    
-    private var photoSelectionSection: some View {
+    // MARK: - Step Views
+    private var photoStep: some View {
         VStack(spacing: 20) {
-            Spacer()
-            
-            Image(systemName: "photo.on.rectangle.angled")
-                .font(.system(size: 80))
-                .foregroundColor(.blue)
-            
-            Text("Select Photos")
-                .font(.title2)
-                .fontWeight(.semibold)
-            
-            Text("Choose 1-6 photos from your gallery")
-                .font(.subheadline)
-                .foregroundColor(.gray)
-                .multilineTextAlignment(.center)
-            
+            Text("Select 1-6 related photos")
+                .font(.headline)
             PhotosPicker(
                 selection: $photoPickerItems,
                 maxSelectionCount: 6,
-                matching: .images
-            ) {
+                matching: .images,
+                photoLibrary: .shared()) {
                 HStack {
-                    Image(systemName: "photo.badge.plus")
-                    Text("Choose Photos")
+                    Image(systemName: "photo.on.rectangle")
+                    Text("Pick Photos")
                 }
-                .font(.headline)
-                .foregroundColor(.white)
                 .padding()
-                .background(Color.blue)
-                .cornerRadius(12)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(10)
             }
             .onChange(of: photoPickerItems) { _, newItems in
                 loadSelectedImages(newItems)
             }
-            
-            Spacer()
-        }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGray6))
-    }
-    
-    private var photoPreviewSection: some View {
-        VStack(spacing: 0) {
-            // Photo carousel
-            TabView(selection: $currentImageIndex) {
-                ForEach(0..<selectedImages.count, id: \.self) { index in
-                    Image(uiImage: selectedImages[index])
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity, maxHeight: 300)
-                        .clipped()
-                        .tag(index)
+            if selectedImages.isEmpty && photoError != nil {
+                HStack(spacing: 4) {
+                    Text("required").foregroundColor(.red).font(.caption)
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .automatic))
-            .frame(height: 300)
-            
-            // Photo counter and selection button
-            HStack {
-                Text("\(currentImageIndex + 1) of \(selectedImages.count)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                
-                Spacer()
-                
-                PhotosPicker(
-                    selection: $photoPickerItems,
-                    maxSelectionCount: 6,
-                    matching: .images
-                ) {
+            if let error = photoError {
+                Text(error).foregroundColor(.red).font(.caption)
+            }
+            if !selectedImages.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
-                        Image(systemName: "photo.badge.plus")
-                        Text("Change Photos")
-                    }
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                }
-                .onChange(of: photoPickerItems) { _, newItems in
-                    loadSelectedImages(newItems)
-                }
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-            .background(Color(.systemGray6))
-        }
-    }
-    
-    private var postDetailsSection: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Caption field
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Caption")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    TextField("Write a caption...", text: $title)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                }
-                
-                // Description field
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Description")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    TextEditor(text: $content)
-                        .frame(minHeight: 120)
-                        .padding(8)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                }
-                
-                // Category picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Category")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Picker("Category", selection: $selectedCategory) {
-                        ForEach(ActivityCategory.allCases, id: \.self) { category in
-                            Text(category.rawValue.capitalized).tag(category)
+                        ForEach(selectedImages, id: \.self) { img in
+                            Image(uiImage: img)
+                                .resizable()
+                                .frame(width: 80, height: 80)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
                     }
-                    .pickerStyle(MenuPickerStyle())
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-                }
-                
-                // Location picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Meeting Location")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Button(action: {
-                        showingLocationPicker = true
-                    }) {
-                        HStack {
-                            Image(systemName: "location.circle.fill")
-                                .foregroundColor(.blue)
-                            
-                            if let location = selectedLocation {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(location)
-                                        .foregroundColor(.primary)
-                                        .font(.subheadline)
-                                }
-                            } else {
-                                Text("Choose a meeting location")
-                                    .foregroundColor(.secondary)
-                                    .font(.subheadline)
-                            }
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
-                                .font(.caption)
-                        }
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding()
-        }
-        .sheet(isPresented: $showingLocationPicker) {
-            LocationPickerView(selectedLocation: $selectedLocation)
+        }.padding()
+    }
+    private var detailsStep: some View {
+        VStack(spacing: 20) {
+            HStack {
+                Text("Caption")
+                if title.isEmpty && detailsError != nil {
+                    Text("required").foregroundColor(.red).font(.caption)
+                }
+            }
+            TextField("Enter caption", text: $title)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            HStack {
+                Text("Description")
+                if content.isEmpty && detailsError != nil {
+                    Text("required").foregroundColor(.red).font(.caption)
+                }
+            }
+            TextEditor(text: $content)
+                .frame(height: 80)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.2)))
+            HStack {
+                Text("Hobby Type")
+                if selectedCategory.isEmpty && detailsError != nil {
+                    Text("required").foregroundColor(.red).font(.caption)
+                }
+            }
+            Picker("Hobby Type", selection: $selectedCategory) {
+                ForEach(hobbyOptions, id: \.self) { hobby in
+                    Text(hobby)
+                }
+            }
+            .pickerStyle(MenuPickerStyle())
+            if let error = detailsError {
+                Text(error).foregroundColor(.red).font(.caption)
+            }
+        }.padding()
+    }
+    private var profileStep: some View {
+        VStack(spacing: 20) {
+            HStack {
+                Text("Username")
+                if username.isEmpty && uuidError != nil {
+                    Text("required").foregroundColor(.red).font(.caption)
+                }
+            }
+            TextField("Enter username", text: $username)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            HStack {
+                Text("User ID (UUID)")
+                if uuid.isEmpty && uuidError != nil {
+                    Text("required").foregroundColor(.red).font(.caption)
+                }
+            }
+            TextField("Enter user id", text: $uuid)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            if let error = uuidError {
+                Text(error).foregroundColor(.red).font(.caption)
+            }
+        }.padding()
+    }
+    private var verifyStep: some View {
+        VStack(spacing: 20) {
+            Text("Personal info for creating your account, ensuring user authenticity")
+                .font(.headline)
+                .foregroundColor(.gray)
+            Picker("Verification Method", selection: $verificationMethod) {
+                Text("Apple ID").tag("apple" as String?)
+                Text("Email").tag("email" as String?)
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            if verificationMethod == "email" {
+                HStack {
+                    Text("Email")
+                    if email.isEmpty && verificationError != nil {
+                        Text("required").foregroundColor(.red).font(.caption)
+                    }
+                }
+                TextField("Email", text: $email)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                HStack {
+                    Text("Verification Code")
+                    if code.isEmpty && verificationError != nil {
+                        Text("required").foregroundColor(.red).font(.caption)
+                    }
+                }
+                TextField("Verification Code", text: $code)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                Button("Send Code") { /* UI only for now */ }
+            } else if verificationMethod == "apple" {
+                Button("Sign in with Apple") { /* UI only for now */ }
+            }
+            if let error = verificationError {
+                Text(error).foregroundColor(.red).font(.caption)
+            }
+        }.padding()
+    }
+    private var reviewStep: some View {
+        VStack(spacing: 20) {
+            Text("Review & Post")
+                .font(.title2)
+                .fontWeight(.semibold)
+            if let error = postError {
+                Text(error).foregroundColor(.red).font(.caption)
+            }
+            if isLoading {
+                ProgressView("Posting...")
+            }
+        }.padding()
+    }
+    // MARK: - Step Logic
+    private var isStepComplete: Bool {
+        switch step {
+        case .photos:
+            return selectedImages.count >= 1 && selectedImages.count <= 6
+        case .details:
+            return !title.isEmpty && !content.isEmpty && !selectedCategory.isEmpty
+        case .profile:
+            return !username.isEmpty && !uuid.isEmpty
+        case .verify:
+            return verificationMethod != nil && (verificationMethod == "apple" || (verificationMethod == "email" && !email.isEmpty && !code.isEmpty))
+        case .review:
+            return true
         }
     }
-    
+    private func nextStep() {
+        switch step {
+        case .photos:
+            if selectedImages.count < 1 {
+                photoError = "Please select at least 1 photo."
+                return
+            }
+            photoError = nil
+            step = .details
+        case .details:
+            if title.isEmpty || content.isEmpty {
+                detailsError = "All fields are required."
+                return
+            }
+            detailsError = nil
+            step = .profile
+        case .profile:
+            if username.isEmpty || uuid.isEmpty {
+                uuidError = "Username and User ID are required."
+                return
+            }
+            // Simulate duplicate check
+            if userStore.users.contains(where: { $0.id == uuid }) {
+                uuidError = "User_id duplicated, please choose another user id"
+                return
+            }
+            uuidError = nil
+            step = .verify
+        case .verify:
+            if verificationMethod == nil || (verificationMethod == "email" && (email.isEmpty || code.isEmpty)) {
+                verificationError = "Please complete verification."
+                return
+            }
+            verificationError = nil
+            step = .review
+        case .review:
+            createAccountAndPost()
+        }
+    }
+    private func previousStep() {
+        switch step {
+        case .photos: break
+        case .details: step = .photos
+        case .profile: step = .details
+        case .verify: step = .profile
+        case .review: step = .verify
+        }
+    }
     private func loadSelectedImages(_ items: [PhotosPickerItem]) {
-        isLoadingImages = true
-        Task {
-            var loadedImages: [UIImage] = []
-            for item in items {
-                if let data = try? await item.loadTransferable(type: Data.self),
-                   let uiImage = UIImage(data: data) {
-                    loadedImages.append(uiImage)
+        selectedImages = []
+        for item in items {
+            _ = item.loadTransferable(type: Data.self) { result in
+                if case .success(let data?) = result, let img = UIImage(data: data) {
+                    DispatchQueue.main.async {
+                        selectedImages.append(img)
+                    }
                 }
             }
-            DispatchQueue.main.async {
-                self.selectedImages = loadedImages
-                self.isLoadingImages = false
-                self.currentImageIndex = 0
-            }
+        }
+    }
+    private func createAccountAndPost() {
+        isLoading = true
+        // Simulate atomic creation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            let user = User(id: uuid, username: username, profilePicture: selectedIcon, bio: "")
+            userStore.currentUser = user
+            userStore.users.append(user)
+            let newPost = Post(
+                id: UUID(),
+                userId: uuid,
+                username: username,
+                photos: selectedImages.map { _ in "local-image" }, // Placeholder for now
+                mainCaption: title,
+                detailedCaption: content,
+                subject: selectedCategory,
+                location: "",
+                userLocation: "",
+                createdAt: Date(),
+                likes: 0,
+                comments: [],
+                isPrivate: false,
+                isPinned: false
+            )
+            postStore.createPost(newPost)
+            isLoading = false
+            postSuccess = true
         }
     }
 }
 
 #Preview {
-    PostCreationView(shouldNavigateToFeed: .constant(false), showingCreateOptions: .constant(false))
+    FirstPostCreationFlow()
         .environmentObject(PostStore())
         .environmentObject(UserStore())
 }

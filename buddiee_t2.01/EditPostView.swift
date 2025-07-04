@@ -11,6 +11,7 @@ struct EditPostView: View {
     @State private var subject: String
     @State private var selectedImages: [UIImage] = []
     @State private var photoPickerItems: [PhotosPickerItem] = []
+    @State private var photoError: String? = nil
     
     init(post: Post) {
         self.post = post
@@ -30,7 +31,7 @@ struct EditPostView: View {
                         photoLibrary: .shared()) {
                         HStack {
                             Image(systemName: "photo.on.rectangle")
-                            Text("Select up to 6 photos")
+                            Text("Select up to 6 photos (at least 1 required)")
                         }
                         .padding()
                         .background(Color.blue.opacity(0.1))
@@ -46,6 +47,9 @@ struct EditPostView: View {
                                 }
                             }
                         }
+                    }
+                    if let error = photoError {
+                        Text(error).foregroundColor(.red).font(.caption)
                     }
                     
                     if !selectedImages.isEmpty {
@@ -76,6 +80,10 @@ struct EditPostView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     
                     Button("Save Changes") {
+                        if (selectedImages.isEmpty && post.photos.isEmpty) {
+                            photoError = "Please select at least 1 photo."
+                            return
+                        }
                         saveChanges()
                     }
                     .frame(maxWidth: .infinity)
@@ -93,6 +101,16 @@ struct EditPostView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        if (selectedImages.isEmpty && post.photos.isEmpty) {
+                            photoError = "Please select at least 1 photo."
+                            return
+                        }
+                        saveChanges()
+                    }
+                    .disabled((selectedImages.isEmpty && post.photos.isEmpty))
                 }
             }
         }

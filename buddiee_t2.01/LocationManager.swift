@@ -3,42 +3,38 @@ import CoreLocation
 import MapKit
 
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
-    private let locationManager = CLLocationManager()
-    @Published var userLocation: CLLocationCoordinate2D? // Published for the blue dot
+    private let manager = CLLocationManager()
+    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    @Published var userLocation: CLLocation? = nil
     @Published var currentPlacemark: CLPlacemark? // Published for location name
     @Published var currentAddress: String = "Unknown Location"
     
     override init() {
         super.init()
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.requestWhenInUseAuthorization()
-        locationManager.startUpdatingLocation()
+        manager.delegate = self
     }
     
-    // MARK: - CLLocationManagerDelegate
+    func requestLocationPermission() {
+        manager.requestWhenInUseAuthorization()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        DispatchQueue.main.async {
+            self.authorizationStatus = status
+            if status == .authorizedWhenInUse || status == .authorizedAlways {
+                self.manager.requestLocation()
+            }
+        }
+    }
+    
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
-        userLocation = location.coordinate
+        userLocation = locations.last
         // Reverse geocode immediately for initial user location
-        reverseGeocode(location: location)
+        reverseGeocode(location: locations.last!)
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Location Manager failed with error: \(error.localizedDescription)")
-    }
-    
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        switch manager.authorizationStatus {
-        case .authorizedWhenInUse, .authorizedAlways:
-            locationManager.startUpdatingLocation()
-        case .denied, .restricted:
-            print("Location access denied or restricted.")
-        case .notDetermined:
-            break
-        @unknown default:
-            break
-        }
+        print("Location error: \(error.localizedDescription)")
     }
     
     // MARK: - Geocoding

@@ -47,63 +47,95 @@ struct ContentView: View {
     @StateObject var messageStore = MessageStore()
     @StateObject var locationStore = LocationStore()
     @StateObject var historyStore = BrowsingHistoryStore()
+    @AppStorage("onboardingComplete") var onboardingComplete: Bool = false
+    @AppStorage("selectedHobbies") var selectedHobbiesString: String = ""
+    @AppStorage("locationPref") var locationPref: Bool = true
     @State private var selectedTab = 0
     @State private var showingCreateOptions = false
     @State private var shouldNavigateToFeed = false
-
+    var selectedHobbies: [String] {
+        selectedHobbiesString.split(separator: ",").map { String($0) }
+    }
     var body: some View {
-        TabView(selection: $selectedTab) {
-            NavigationView {
-                PostsFeedView()
-            }
-            .tabItem {
-                Image(systemName: "doc.text.fill")
-                Text("Posts")
-            }
-            .tag(0)
-            
-            // Create Post Button View
-            CreatePostButtonView(showingCreateOptions: $showingCreateOptions)
-                .tabItem {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Create")
+        Group {
+            if !onboardingComplete {
+                Text("Loading...")
+            } else {
+                TabView(selection: $selectedTab) {
+                    NavigationView {
+                        PostsFeedView(selectedHobbies: selectedHobbies, locationPref: locationPref)
+                    }
+                    .tabItem {
+                        Image(systemName: "doc.text.fill")
+                        Text("Posts")
+                    }
+                    .tag(0)
+                    // Create Post Button View
+                    CreatePostButtonView(showingCreateOptions: $showingCreateOptions)
+                        .tabItem {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Create")
+                        }
+                        .tag(1)
+                    LocationView()
+                        .tabItem {
+                            Image(systemName: "map.fill")
+                            Text("Location")
+                        }
+                        .tag(2)
+                    MessagesView()
+                        .tabItem {
+                            Image(systemName: "message.fill")
+                            Text("Messages")
+                        }
+                        .tag(3)
+                    ProfileView(user: userStore.currentUser ?? User(id: "default", username: "Default User", profilePicture: nil, bio: "Default bio"))
+                        .tabItem {
+                            Image(systemName: "person.fill")
+                            Text("Profile")
+                        }
+                        .tag(4)
                 }
-                .tag(1)
-            
-            LocationView()
-                .tabItem {
-                    Image(systemName: "map.fill")
-                    Text("Location")
+                .environmentObject(postStore)
+                .environmentObject(userStore)
+                .environmentObject(messageStore)
+                .environmentObject(locationStore)
+                .environmentObject(historyStore)
+                .sheet(isPresented: $showingCreateOptions) {
+                    FirstPostCreationFlow()
                 }
-                .tag(2)
-            MessagesView()
-                .tabItem {
-                    Image(systemName: "message.fill")
-                    Text("Messages")
+                .onChange(of: shouldNavigateToFeed) { _, newValue in
+                    if newValue {
+                        showingCreateOptions = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            selectedTab = 0
+                            shouldNavigateToFeed = false
+                        }
+                    }
                 }
-                .tag(3)
-            ProfileView(user: userStore.currentUser ?? User(id: "default", username: "Default User", profilePicture: nil, bio: "Default bio"))
-                .tabItem {
-                    Image(systemName: "person.fill")
-                    Text("Profile")
-                }
-                .tag(4)
-        }
-        .environmentObject(postStore)
-        .environmentObject(userStore)
-        .environmentObject(messageStore)
-        .environmentObject(locationStore)
-        .environmentObject(historyStore)
-        .sheet(isPresented: $showingCreateOptions) {
-            CreatePostOptionsView(shouldNavigateToFeed: $shouldNavigateToFeed, showingCreateOptions: $showingCreateOptions)
-        }
-        .onChange(of: shouldNavigateToFeed) { _, newValue in
-            if newValue {
-                showingCreateOptions = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    selectedTab = 0
-                    shouldNavigateToFeed = false
-                }
+                // Block interaction if user has not created account/first post
+                .disabled(userStore.currentUser == nil)
+                .overlay(
+                    Group {
+                        if userStore.currentUser == nil {
+                            Color.black.opacity(0.4)
+                                .ignoresSafeArea()
+                            VStack(spacing: 24) {
+                                Text("Create your first post to unlock all features!")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                Button(action: { showingCreateOptions = true }) {
+                                    Text("Create Now")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .padding()
+                                        .background(Color.blue)
+                                        .cornerRadius(12)
+                                }
+                            }
+                        }
+                    }
+                )
             }
         }
     }
@@ -214,85 +246,7 @@ struct CreatePostOptionsView: View {
             }
         }
         .sheet(isPresented: $showingPhotoPost) {
-            PostCreationView(shouldNavigateToFeed: $shouldNavigateToFeed, showingCreateOptions: $showingCreateOptions)
-        }
-        .sheet(isPresented: $showingTextPost) {
-            TextOnlyPostView(shouldNavigateToFeed: $shouldNavigateToFeed, showingCreateOptions: $showingCreateOptions)
-        }
-    }
-}
-
-// Text Only Post View
-struct TextOnlyPostView: View {
-    @EnvironmentObject var postStore: PostStore
-    @EnvironmentObject var userStore: UserStore
-    @Environment(\.dismiss) private var dismiss
-    @State private var title: String = ""
-    @State private var content: String = ""
-    @State private var selectedCategory: ActivityCategory = .study
-    @State private var showSuccessAlert = false
-    @Binding var shouldNavigateToFeed: Bool
-    @Binding var showingCreateOptions: Bool
-    
-    private func createTextPost() {
-        let newPost = Post(
-            id: UUID(),
-            userId: userStore.currentUser?.id ?? "",
-            username: userStore.currentUser?.username ?? "Unknown User",
-            photos: [],
-            mainCaption: title,
-            detailedCaption: content,
-            subject: selectedCategory.rawValue,
-            location: userStore.currentUser?.bio,
-            userLocation: nil,
-            createdAt: Date(),
-            likes: 0,
-            comments: [],
-            isPrivate: false,
-            isPinned: false
-        )
-        postStore.createPost(newPost)
-        showSuccessAlert = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            shouldNavigateToFeed = true
-            showingCreateOptions = false
-            dismiss()
-        }
-    }
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Post Details")) {
-                    TextField("Title", text: $title)
-                    TextEditor(text: $content)
-                        .frame(height: 150)
-                    
-                    Picker("Category", selection: $selectedCategory) {
-                        ForEach(ActivityCategory.allCases, id: \.self) { category in
-                            Text(category.rawValue.capitalized).tag(category)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Text Post")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Post") {
-                        createTextPost()
-                    }
-                    .disabled(title.isEmpty || content.isEmpty)
-                }
-            }
-            .alert("POSTED SUCCESSFULLY!!!", isPresented: $showSuccessAlert) {
-                Button("OK", role: .cancel) { }
-            }
+            FirstPostCreationFlow()
         }
     }
 }

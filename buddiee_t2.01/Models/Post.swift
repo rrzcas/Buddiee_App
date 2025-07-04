@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Post: Identifiable, Codable {
+public struct Post: Identifiable, Codable, Hashable {
     public let id: UUID
     public let userId: String
     public let username: String // Add username for display
@@ -31,5 +31,14 @@ public struct Post: Identifiable, Codable {
         self.comments = comments
         self.isPrivate = isPrivate
         self.isPinned = isPinned
+    }
+    
+    // MARK: - Hashable
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    public static func == (lhs: Post, rhs: Post) -> Bool {
+        lhs.id == rhs.id
     }
 } 

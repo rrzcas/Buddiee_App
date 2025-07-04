@@ -9,12 +9,13 @@ class UserStore: ObservableObject {
     
     init() {
         // Set up a default current user for testing
-        currentUser = User(
-            id: "currentUserId",
-            username: "TestUser",
-            profilePicture: nil,
-            bio: "Test bio"
-        )
+        // currentUser = User(
+        //     id: "currentUserId",
+        //     username: "TestUser",
+        //     profilePicture: nil,
+        //     bio: "Test bio"
+        // )
+        currentUser = nil
     }
     
     func login(username: String, password: String) {}
