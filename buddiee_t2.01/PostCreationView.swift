@@ -12,8 +12,8 @@ struct FirstPostCreationFlow: View {
     @Environment(\.dismiss) private var dismiss
     @State private var step: PostCreationStep = .photos
     // Step 1: Photos
-    @State private var selectedImages: [UIImage] = []
-    @State private var photoPickerItems: [PhotosPickerItem] = []
+    @State private var postSelectedImages: [UIImage] = []
+    @State private var postPhotoPickerItems: [PhotosPickerItem] = []
     @State private var photoError: String? = nil
     // Step 2: Details
     @State private var title: String = ""
@@ -37,6 +37,12 @@ struct FirstPostCreationFlow: View {
     // Helper
     let hobbyOptions = ["Study", "Light Trekking", "Photography", "Gym", "Day Outing", "Others"]
     let iconOptions = ["person.circle", "person.circle.fill", "person.crop.circle", "person.crop.circle.fill", "person.2.circle", "person.2.circle.fill"]
+    @State private var showPhotoPicker: Bool = false
+    @State private var isLoadingImages: Bool = false
+    // Step 3: Profile (User Icon)
+    @State private var userIconPickerItem: PhotosPickerItem? = nil
+    @State private var userIconImage: UIImage? = nil
+    @State private var uiUpdateTrigger: Bool = false
     var body: some View {
         NavigationView {
             VStack {
@@ -53,24 +59,29 @@ struct FirstPostCreationFlow: View {
                     reviewStep
                 }
                 Spacer()
-                HStack {
-                    if step != .photos {
-                        Button("Back") { withAnimation { previousStep() } }
-                            .padding()
+                if step != .photos {
+                    HStack {
+                        if step != .photos {
+                            Button("Back") { withAnimation { previousStep() } }
+                                .padding()
+                        }
+                        Spacer()
+                        Button(action: {
+                            print("[BUTTON] Continue tapped, step: \(step), isStepComplete: \(isStepComplete)")
+                            withAnimation { nextStep() }
+                        }) {
+                            Text(step == .review ? "Post to find your buddy now!" : "Continue")
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(isStepComplete ? Color.blue : Color.gray)
+                                .cornerRadius(12)
+                        }
+                        .disabled(!isStepComplete || isLoading)
                     }
-                    Spacer()
-                    Button(action: { withAnimation { nextStep() } }) {
-                        Text(step == .review ? "Post to find your buddy now!" : "Continue")
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(isStepComplete ? Color.blue : Color.gray)
-                            .cornerRadius(12)
-                    }
-                    .disabled(!isStepComplete || isLoading)
+                    .padding()
                 }
-                .padding()
             }
             .navigationTitle("Create First Post")
             .alert(isPresented: $postSuccess) {
@@ -81,13 +92,19 @@ struct FirstPostCreationFlow: View {
     // MARK: - Step Views
     private var photoStep: some View {
         VStack(spacing: 20) {
+            // TEST BUTTON
+            Button("Test Button") {
+                print("[TEST BUTTON] tapped!")
+            }
+            .padding()
+            .background(Color.green.opacity(0.2))
+            .cornerRadius(8)
+            // END TEST BUTTON
             Text("Select 1-6 related photos")
                 .font(.headline)
-            PhotosPicker(
-                selection: $photoPickerItems,
-                maxSelectionCount: 6,
-                matching: .images,
-                photoLibrary: .shared()) {
+            Button(action: {
+                showPhotoPicker = true
+            }) {
                 HStack {
                     Image(systemName: "photo.on.rectangle")
                     Text("Pick Photos")
@@ -96,10 +113,30 @@ struct FirstPostCreationFlow: View {
                 .background(Color.blue.opacity(0.1))
                 .cornerRadius(10)
             }
-            .onChange(of: photoPickerItems) { _, newItems in
-                loadSelectedImages(newItems)
+            .disabled(false)
+            .photosPicker(isPresented: $showPhotoPicker, selection: $postPhotoPickerItems, maxSelectionCount: 6, matching: .images)
+            .onAppear {
+                PHPhotoLibrary.requestAuthorization { status in
+                    print("Photo library authorization status: \(status.rawValue)")
+                    if status == .authorized || status == .limited {
+                        DispatchQueue.main.async {
+                            showPhotoPicker = true
+                        }
+                    }
+                }
             }
-            if selectedImages.isEmpty && photoError != nil {
+            .onChange(of: postPhotoPickerItems) { _, newItems in
+                isLoadingImages = true
+                loadSelectedImages(newItems) { images in
+                    postSelectedImages = images
+                    isLoadingImages = false
+                    uiUpdateTrigger.toggle()
+                }
+            }
+            if isLoadingImages {
+                ProgressView("Loading photos...")
+            }
+            if postSelectedImages.isEmpty && photoError != nil {
                 HStack(spacing: 4) {
                     Text("required").foregroundColor(.red).font(.caption)
                 }
@@ -107,10 +144,10 @@ struct FirstPostCreationFlow: View {
             if let error = photoError {
                 Text(error).foregroundColor(.red).font(.caption)
             }
-            if !selectedImages.isEmpty {
+            if !postSelectedImages.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
-                        ForEach(selectedImages, id: \.self) { img in
+                        ForEach(postSelectedImages, id: \ .self) { img in
                             Image(uiImage: img)
                                 .resizable()
                                 .frame(width: 80, height: 80)
@@ -119,6 +156,19 @@ struct FirstPostCreationFlow: View {
                     }
                 }
             }
+            Button(action: {
+                print("[BUTTON] Continue tapped, step: \(step), isStepComplete: \(isStepComplete)")
+                withAnimation { nextStep() }
+            }) {
+                Text(step == .review ? "Post to find your buddy now!" : "Continue")
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(isStepComplete ? Color.blue : Color.gray)
+                    .cornerRadius(12)
+            }
+            .disabled(!isStepComplete || isLoading)
         }.padding()
     }
     private var detailsStep: some View {
@@ -152,13 +202,40 @@ struct FirstPostCreationFlow: View {
                 }
             }
             .pickerStyle(MenuPickerStyle())
-            if let error = detailsError {
-                Text(error).foregroundColor(.red).font(.caption)
-            }
+            Divider().background(Color.gray)
+            Text("") // Spacer for visual separation
         }.padding()
     }
     private var profileStep: some View {
         VStack(spacing: 20) {
+            Divider().background(Color.gray)
+            Text("Posting as...")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+            PhotosPicker(selection: $userIconPickerItem, matching: .images, photoLibrary: .shared()) {
+                HStack {
+                    Image(systemName: "person.crop.circle")
+                    Text("Choose User Icon")
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(10)
+            }
+            .onChange(of: userIconPickerItem) { _, newItem in
+                if let item = newItem {
+                    Task {
+                        if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
+                            userIconImage = img
+                        }
+                    }
+                }
+            }
+            if let icon = userIconImage {
+                Image(uiImage: icon)
+                    .resizable()
+                    .frame(width: 80, height: 80)
+                    .clipShape(Circle())
+            }
             HStack {
                 Text("Username")
                 if username.isEmpty && uuidError != nil {
@@ -173,8 +250,16 @@ struct FirstPostCreationFlow: View {
                     Text("required").foregroundColor(.red).font(.caption)
                 }
             }
-            TextField("Enter user id", text: $uuid)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+            HStack {
+                TextField("Enter user id", text: $uuid)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                Button("Randomize") {
+                    uuid = UUID().uuidString
+                }
+            }
+            Text("\(uuid)")
+                .font(.caption)
+                .foregroundColor(.gray)
             if let error = uuidError {
                 Text(error).foregroundColor(.red).font(.caption)
             }
@@ -182,8 +267,9 @@ struct FirstPostCreationFlow: View {
     }
     private var verifyStep: some View {
         VStack(spacing: 20) {
+            Divider().background(Color.gray)
             Text("Personal info for creating your account, ensuring user authenticity")
-                .font(.headline)
+                .font(.subheadline)
                 .foregroundColor(.gray)
             Picker("Verification Method", selection: $verificationMethod) {
                 Text("Apple ID").tag("apple" as String?)
@@ -233,7 +319,7 @@ struct FirstPostCreationFlow: View {
     private var isStepComplete: Bool {
         switch step {
         case .photos:
-            return selectedImages.count >= 1 && selectedImages.count <= 6
+            return postSelectedImages.count >= 1 && postSelectedImages.count <= 6 && !isLoadingImages
         case .details:
             return !title.isEmpty && !content.isEmpty && !selectedCategory.isEmpty
         case .profile:
@@ -245,43 +331,53 @@ struct FirstPostCreationFlow: View {
         }
     }
     private func nextStep() {
+        print("Current step: \(step)")
         switch step {
         case .photos:
-            if selectedImages.count < 1 {
+            print("postSelectedImages count: \(postSelectedImages.count)")
+            if postSelectedImages.count < 1 {
                 photoError = "Please select at least 1 photo."
                 return
             }
             photoError = nil
             step = .details
+            print("Advancing to .details step")
         case .details:
+            print("title: \(title), content: \(content), selectedCategory: \(selectedCategory)")
             if title.isEmpty || content.isEmpty {
                 detailsError = "All fields are required."
                 return
             }
             detailsError = nil
             step = .profile
+            print("Advancing to .profile step")
         case .profile:
+            print("username: \(username), uuid: \(uuid)")
             if username.isEmpty || uuid.isEmpty {
                 uuidError = "Username and User ID are required."
                 return
             }
-            // Simulate duplicate check
             if userStore.users.contains(where: { $0.id == uuid }) {
                 uuidError = "User_id duplicated, please choose another user id"
                 return
             }
             uuidError = nil
             step = .verify
+            print("Advancing to .verify step")
         case .verify:
+            print("verificationMethod: \(String(describing: verificationMethod)), email: \(email), code: \(code)")
             if verificationMethod == nil || (verificationMethod == "email" && (email.isEmpty || code.isEmpty)) {
                 verificationError = "Please complete verification."
                 return
             }
             verificationError = nil
             step = .review
+            print("Advancing to .review step")
         case .review:
+            print("Creating account and post...")
             createAccountAndPost()
         }
+        print("New step: \(step)")
     }
     private func previousStep() {
         switch step {
@@ -292,15 +388,22 @@ struct FirstPostCreationFlow: View {
         case .review: step = .verify
         }
     }
-    private func loadSelectedImages(_ items: [PhotosPickerItem]) {
-        selectedImages = []
-        for item in items {
-            _ = item.loadTransferable(type: Data.self) { result in
-                if case .success(let data?) = result, let img = UIImage(data: data) {
-                    DispatchQueue.main.async {
-                        selectedImages.append(img)
-                    }
+    private func loadSelectedImages(_ items: [PhotosPickerItem], completion: @escaping ([UIImage]) -> Void) {
+        print("loadSelectedImages called with \(items.count) items")
+        Task {
+            var loadedImages: [UIImage] = []
+            for item in items {
+                if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
+                    loadedImages.append(img)
+                    print("Appended image, loadedImages count: \(loadedImages.count)")
                 }
+            }
+            DispatchQueue.main.async {
+                print("selectedImages after async load: \(loadedImages.count)")
+                isLoadingImages = false
+                uiUpdateTrigger.toggle()
+                print("isLoadingImages set to false, uiUpdateTrigger toggled")
+                completion(loadedImages)
             }
         }
     }
@@ -315,7 +418,7 @@ struct FirstPostCreationFlow: View {
                 id: UUID(),
                 userId: uuid,
                 username: username,
-                photos: selectedImages.map { _ in "local-image" }, // Placeholder for now
+                photos: postSelectedImages.map { _ in "local-image" }, // Placeholder for now
                 mainCaption: title,
                 detailedCaption: content,
                 subject: selectedCategory,
