@@ -15,13 +15,18 @@ struct FirstPostCreationFlow: View {
     @State private var postSelectedImages: [UIImage] = []
     @State private var postPhotoPickerItems: [PhotosPickerItem] = []
     @State private var photoError: String? = nil
+    @State private var showPhotoPicker: Bool = false
+    @State private var isLoadingImages: Bool = false
+    @State private var showPermissionAlert: Bool = false
     // Step 2: Details
     @State private var title: String = ""
     @State private var content: String = ""
     @State private var selectedCategory: String = "Study"
     @State private var detailsError: String? = nil
+    let hobbyOptions = ["Study", "Light Trekking", "Photography", "Gym", "Day Outing", "Others"]
     // Step 3: Profile
-    @State private var selectedIcon: String = "person.circle"
+    @State private var userIconPickerItem: PhotosPickerItem? = nil
+    @State private var userIconImage: UIImage? = nil
     @State private var username: String = ""
     @State private var uuid: String = UUID().uuidString
     @State private var uuidError: String? = nil
@@ -34,29 +39,22 @@ struct FirstPostCreationFlow: View {
     // Step 5: Review & Post
     @State private var postError: String? = nil
     @State private var postSuccess = false
-    // Helper
-    let hobbyOptions = ["Study", "Light Trekking", "Photography", "Gym", "Day Outing", "Others"]
-    let iconOptions = ["person.circle", "person.circle.fill", "person.crop.circle", "person.crop.circle.fill", "person.2.circle", "person.2.circle.fill"]
-    @State private var showPhotoPicker: Bool = false
-    @State private var isLoadingImages: Bool = false
-    // Step 3: Profile (User Icon)
-    @State private var userIconPickerItem: PhotosPickerItem? = nil
-    @State private var userIconImage: UIImage? = nil
-    @State private var uiUpdateTrigger: Bool = false
     var body: some View {
         NavigationView {
             VStack {
-                switch step {
-                case .photos:
-                    photoStep
-                case .details:
-                    detailsStep
-                case .profile:
-                    profileStep
-                case .verify:
-                    verifyStep
-                case .review:
-                    reviewStep
+                Group {
+                    switch step {
+                    case .photos:
+                        photoStep
+                    case .details:
+                        detailsStep
+                    case .profile:
+                        profileStep
+                    case .verify:
+                        verifyStep
+                    case .review:
+                        reviewStep
+                    }
                 }
                 Spacer()
                 HStack {
@@ -66,7 +64,6 @@ struct FirstPostCreationFlow: View {
                     }
                     Spacer()
                     Button(action: {
-                        print("[BUTTON] Continue tapped, step: \(step), isStepComplete: \(isStepComplete)")
                         withAnimation { nextStep() }
                     }) {
                         Text(step == .review ? "Post to find your buddy now!" : "Continue")
@@ -85,18 +82,75 @@ struct FirstPostCreationFlow: View {
             .alert(isPresented: $postSuccess) {
                 Alert(title: Text("Success!"), message: Text("Your account and post have been created."), dismissButton: .default(Text("OK"), action: { dismiss() }))
             }
+            .alert(isPresented: $showPermissionAlert) {
+                Alert(title: Text("Photo Access Needed"), message: Text("Please allow photo library access in Settings to pick photos for your post."), dismissButton: .default(Text("OK")))
+            }
         }
     }
     // MARK: - Step Views
     private var photoStep: some View {
-        PhotoStepView(
-            postSelectedImages: $postSelectedImages,
-            postPhotoPickerItems: $postPhotoPickerItems,
-            isLoadingImages: $isLoadingImages,
-            uiUpdateTrigger: $uiUpdateTrigger,
-            photoError: $photoError,
-            showPhotoPicker: $showPhotoPicker
-        )
+        VStack(spacing: 20) {
+            Text("Select 1-6 related photos")
+                .font(.headline)
+            Button(action: {
+                let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+                if status == .authorized || status == .limited {
+                    showPhotoPicker = true
+                } else if status == .notDetermined {
+                    PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
+                        DispatchQueue.main.async {
+                            if newStatus == .authorized || newStatus == .limited {
+                                showPhotoPicker = true
+                            } else {
+                                showPermissionAlert = true
+                            }
+                        }
+                    }
+                } else {
+                    showPermissionAlert = true
+                }
+            }) {
+                HStack {
+                    Image(systemName: "photo.on.rectangle")
+                    Text(postSelectedImages.isEmpty ? "Pick Photos" : "Edit Photos (\(postSelectedImages.count))")
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(10)
+            }
+            .disabled(false)
+            .photosPicker(isPresented: $showPhotoPicker, selection: $postPhotoPickerItems, maxSelectionCount: 6, matching: .images)
+            .onChange(of: postPhotoPickerItems) { _, newItems in
+                isLoadingImages = true
+                loadSelectedImages(newItems) { images in
+                    postSelectedImages = images
+                    isLoadingImages = false
+                }
+            }
+            if isLoadingImages {
+                ProgressView("Loading photos...")
+            }
+            if postSelectedImages.isEmpty && photoError != nil {
+                HStack(spacing: 4) {
+                    Text("required").foregroundColor(.red).font(.caption)
+                }
+            }
+            if let error = photoError {
+                Text(error).foregroundColor(.red).font(.caption)
+            }
+            if !postSelectedImages.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack {
+                        ForEach(postSelectedImages, id: \.self) { img in
+                            Image(uiImage: img)
+                                .resizable()
+                                .frame(width: 80, height: 80)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                    }
+                }
+            }
+        }.padding()
     }
     private var detailsStep: some View {
         VStack(spacing: 20) {
@@ -258,28 +312,22 @@ struct FirstPostCreationFlow: View {
         }
     }
     private func nextStep() {
-        print("Current step: \(step)")
         switch step {
         case .photos:
-            print("postSelectedImages count: \(postSelectedImages.count)")
             if postSelectedImages.count < 1 {
                 photoError = "Please select at least 1 photo."
                 return
             }
             photoError = nil
             step = .details
-            print("Advancing to .details step")
         case .details:
-            print("title: \(title), content: \(content), selectedCategory: \(selectedCategory)")
             if title.isEmpty || content.isEmpty {
                 detailsError = "All fields are required."
                 return
             }
             detailsError = nil
             step = .profile
-            print("Advancing to .profile step")
         case .profile:
-            print("username: \(username), uuid: \(uuid)")
             if username.isEmpty || uuid.isEmpty {
                 uuidError = "Username and User ID are required."
                 return
@@ -290,21 +338,16 @@ struct FirstPostCreationFlow: View {
             }
             uuidError = nil
             step = .verify
-            print("Advancing to .verify step")
         case .verify:
-            print("verificationMethod: \(String(describing: verificationMethod)), email: \(email), code: \(code)")
             if verificationMethod == nil || (verificationMethod == "email" && (email.isEmpty || code.isEmpty)) {
                 verificationError = "Please complete verification."
                 return
             }
             verificationError = nil
             step = .review
-            print("Advancing to .review step")
         case .review:
-            print("Creating account and post...")
             createAccountAndPost()
         }
-        print("New step: \(step)")
     }
     private func previousStep() {
         switch step {
@@ -316,36 +359,29 @@ struct FirstPostCreationFlow: View {
         }
     }
     private func loadSelectedImages(_ items: [PhotosPickerItem], completion: @escaping ([UIImage]) -> Void) {
-        print("loadSelectedImages called with \(items.count) items")
         Task {
             var loadedImages: [UIImage] = []
             for item in items {
                 if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
                     loadedImages.append(img)
-                    print("Appended image, loadedImages count: \(loadedImages.count)")
                 }
             }
             DispatchQueue.main.async {
-                print("selectedImages after async load: \(loadedImages.count)")
-                isLoadingImages = false
-                uiUpdateTrigger.toggle()
-                print("isLoadingImages set to false, uiUpdateTrigger toggled")
                 completion(loadedImages)
             }
         }
     }
     private func createAccountAndPost() {
         isLoading = true
-        // Simulate atomic creation
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            let user = User(id: uuid, username: username, profilePicture: selectedIcon, bio: "")
+            let user = User(id: uuid, username: username, profilePicture: nil, bio: "")
             userStore.currentUser = user
             userStore.users.append(user)
             let newPost = Post(
                 id: UUID(),
                 userId: uuid,
                 username: username,
-                photos: postSelectedImages.map { _ in "local-image" }, // Placeholder for now
+                photos: postSelectedImages.map { _ in "local-image" },
                 mainCaption: title,
                 detailedCaption: content,
                 subject: selectedCategory,
@@ -360,93 +396,6 @@ struct FirstPostCreationFlow: View {
             postStore.createPost(newPost)
             isLoading = false
             postSuccess = true
-        }
-    }
-}
-
-struct PhotoStepView: View {
-    @Binding var postSelectedImages: [UIImage]
-    @Binding var postPhotoPickerItems: [PhotosPickerItem]
-    @Binding var isLoadingImages: Bool
-    @Binding var uiUpdateTrigger: Bool
-    @Binding var photoError: String?
-    @Binding var showPhotoPicker: Bool
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Select 1-6 related photos")
-                .font(.headline)
-            Button(action: {
-                let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-                if status == .authorized || status == .limited {
-                    showPhotoPicker = true
-                } else if status == .notDetermined {
-                    PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
-                        DispatchQueue.main.async {
-                            if newStatus == .authorized || newStatus == .limited {
-                                showPhotoPicker = true
-                            }
-                        }
-                    }
-                }
-            }) {
-                HStack {
-                    Image(systemName: "photo.on.rectangle")
-                    Text("Pick Photos")
-                }
-                .padding()
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(10)
-            }
-            .disabled(false)
-            .photosPicker(isPresented: $showPhotoPicker, selection: $postPhotoPickerItems, maxSelectionCount: 6, matching: .images)
-            .onChange(of: postPhotoPickerItems) { _, newItems in
-                isLoadingImages = true
-                loadSelectedImages(newItems) { images in
-                    postSelectedImages = images
-                    isLoadingImages = false
-                    uiUpdateTrigger.toggle()
-                }
-            }
-            if isLoadingImages {
-                ProgressView("Loading photos...")
-            }
-            if postSelectedImages.isEmpty && photoError != nil {
-                HStack(spacing: 4) {
-                    Text("required").foregroundColor(.red).font(.caption)
-                }
-            }
-            if let error = photoError {
-                Text(error).foregroundColor(.red).font(.caption)
-            }
-            if !postSelectedImages.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        ForEach(postSelectedImages, id: \ .self) { img in
-                            Image(uiImage: img)
-                                .resizable()
-                                .frame(width: 80, height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                        }
-                    }
-                }
-            }
-        }
-        .padding()
-    }
-    private func loadSelectedImages(_ items: [PhotosPickerItem], completion: @escaping ([UIImage]) -> Void) {
-        print("loadSelectedImages called with \(items.count) items [PhotoStepView]")
-        Task {
-            var loadedImages: [UIImage] = []
-            for item in items {
-                if let data = try? await item.loadTransferable(type: Data.self), let img = UIImage(data: data) {
-                    loadedImages.append(img)
-                    print("Appended image, loadedImages count: \(loadedImages.count) [PhotoStepView]")
-                }
-            }
-            DispatchQueue.main.async {
-                print("selectedImages after async load: \(loadedImages.count) [PhotoStepView]")
-                completion(loadedImages)
-            }
         }
     }
 }

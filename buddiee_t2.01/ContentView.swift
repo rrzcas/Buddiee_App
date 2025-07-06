@@ -4,6 +4,7 @@
 //
 //  Created by Helen Fung on 07/06/2025.
 import SwiftUI
+import PhotosUI
 
 struct SourceFilterButton: View {
     let source: PostSource
@@ -42,102 +43,10 @@ struct FilterButton: View {
 }
 
 struct ContentView: View {
-    @EnvironmentObject var postStore: PostStore
-    @EnvironmentObject var userStore: UserStore
-    @StateObject var messageStore = MessageStore()
-    @StateObject var locationStore = LocationStore()
-    @StateObject var historyStore = BrowsingHistoryStore()
-    @AppStorage("onboardingComplete") var onboardingComplete: Bool = false
-    @AppStorage("selectedHobbies") var selectedHobbiesString: String = ""
-    @AppStorage("locationPref") var locationPref: Bool = true
-    @State private var selectedTab = 0
-    @State private var showingCreateOptions = false
-    @State private var shouldNavigateToFeed = false
-    var selectedHobbies: [String] {
-        selectedHobbiesString.split(separator: ",").map { String($0) }
-    }
     var body: some View {
-        Group {
-            if !onboardingComplete {
-                Text("Loading...")
-            } else {
-                TabView(selection: $selectedTab) {
-                    NavigationView {
-                        PostsFeedView(selectedHobbies: selectedHobbies, locationPref: locationPref)
-                    }
-                    .tabItem {
-                        Image(systemName: "doc.text.fill")
-                        Text("Posts")
-                    }
-                    .tag(0)
-                    // Create Post Button View
-                    CreatePostButtonView(showingCreateOptions: $showingCreateOptions)
-                        .tabItem {
-                            Image(systemName: "plus.circle.fill")
-                            Text("Create")
-                        }
-                        .tag(1)
-                    LocationView()
-                        .tabItem {
-                            Image(systemName: "map.fill")
-                            Text("Location")
-                        }
-                        .tag(2)
-                    MessagesView()
-                        .tabItem {
-                            Image(systemName: "message.fill")
-                            Text("Messages")
-                        }
-                        .tag(3)
-                    ProfileView(user: userStore.currentUser ?? User(id: "default", username: "Default User", profilePicture: nil, bio: "Default bio"))
-                        .tabItem {
-                            Image(systemName: "person.fill")
-                            Text("Profile")
-                        }
-                        .tag(4)
-                }
-                .environmentObject(postStore)
-                .environmentObject(userStore)
-                .environmentObject(messageStore)
-                .environmentObject(locationStore)
-                .environmentObject(historyStore)
-                .sheet(isPresented: $showingCreateOptions) {
-                    FirstPostCreationFlow()
-                }
-                .onChange(of: shouldNavigateToFeed) { _, newValue in
-                    if newValue {
-                        showingCreateOptions = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            selectedTab = 0
-                            shouldNavigateToFeed = false
-                        }
-                    }
-                }
-                // Block interaction if user has not created account/first post
-                .disabled(userStore.currentUser == nil)
-                .overlay(
-                    Group {
-                        if userStore.currentUser == nil {
-                            Color.black.opacity(0.4)
-                                .ignoresSafeArea()
-                            VStack(spacing: 24) {
-                                Text("Create your first post to unlock all features!")
-                                    .font(.title2)
-                                    .foregroundColor(.white)
-                                Button(action: { showingCreateOptions = true }) {
-                                    Text("Create Now")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .padding()
-                                        .background(Color.blue)
-                                        .cornerRadius(12)
-                                }
-                            }
-                        }
-                    }
-                )
-            }
-        }
+        FirstPostCreationFlow()
+            .environmentObject(PostStore())
+            .environmentObject(UserStore())
     }
 }
 

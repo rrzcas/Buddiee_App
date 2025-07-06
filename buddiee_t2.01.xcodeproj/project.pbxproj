@@ -39,10 +39,10 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		18E2AECA2DF5FCDA00840180 /* Exceptions for "buddiee_t2.01" folder in "buddiee_t2.01" target */ = {
+		18E7629B2E1AB51C00DA1B34 /* Exceptions for "buddiee_t2.01" folder in "buddiee_t2.01" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				buddiee_t2_01/Info.plist,
 			);
 			target = 18E2AE7C2DF45C7600840180 /* buddiee_t2.01 */;
 		};
@@ -52,7 +52,7 @@
 		18E2AE7F2DF45C7600840180 /* buddiee_t2.01 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				18E2AECA2DF5FCDA00840180 /* Exceptions for "buddiee_t2.01" folder in "buddiee_t2.01" target */,
+				18E7629B2E1AB51C00DA1B34 /* Exceptions for "buddiee_t2.01" folder in "buddiee_t2.01" target */,
 			);
 			path = buddiee_t2.01;
 			sourceTree = "<group>";
