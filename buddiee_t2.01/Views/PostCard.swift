@@ -2,107 +2,101 @@ import SwiftUI
 
 struct PostCard: View {
     let post: Post
-    @State private var currentImageIndex = 0 // For image carousel
-
+    let cardHeight: CGFloat
+    var onUserTap: ((String) -> Void)? = nil
+    var onCardTap: (() -> Void)? = nil
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Image Carousel (if images exist)
-            if !post.photos.isEmpty {
-                TabView(selection: $currentImageIndex) {
-                    ForEach(0..<post.photos.count, id: \.self) {
-                        index in
-                        let photoURL = post.photos[index]
-                        if photoURL.hasPrefix("file://") {
-                            // Handle local file URLs
-                            if let url = URL(string: photoURL),
-                               let imageData = try? Data(contentsOf: url),
-                               let uiImage = UIImage(data: imageData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(maxWidth: .infinity, maxHeight: 200)
-                                    .clipped()
-                                    .tag(index)
-                            } else {
-                                Image(systemName: "photo")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(maxWidth: .infinity, maxHeight: 200)
-                                    .foregroundColor(.gray)
-                                    .tag(index)
+        ZStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 8) {
+                // First image only
+                if let firstPhoto = post.photos.first {
+                    if firstPhoto.hasPrefix("file://"), let uiImage = ImageStorage.loadImage(from: firstPhoto) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: cardHeight * 0.55)
+                            .clipped()
+                            .cornerRadius(10)
+                    } else if let url = URL(string: firstPhoto) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView().frame(height: cardHeight * 0.55)
+                            case .success(let image):
+                                image.resizable().scaledToFill().frame(height: cardHeight * 0.55).clipped().cornerRadius(10)
+                            case .failure:
+                                Image(systemName: "photo").resizable().scaledToFit().frame(height: cardHeight * 0.55).foregroundColor(.gray)
+                            @unknown default:
+                                EmptyView()
                             }
-                        } else if let url = URL(string: photoURL) {
-                            AsyncImage(url: url) {
-                                phase in
-                                switch phase {
-                                case .empty:
-                                    ProgressView()
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
-                                        .background(Color.gray.opacity(0.1))
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
-                                        .clipped()
-                                case .failure:
-                                    Image(systemName: "photo")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
-                                        .foregroundColor(.gray)
-                                default:
-                                    EmptyView()
-                                }
-                            }
-                            .tag(index)
-                        } else {
-                            Image(systemName: "photo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: .infinity, maxHeight: 200)
-                                .foregroundColor(.gray)
-                                .tag(index)
                         }
+                    } else {
+                        Image(systemName: "photo").resizable().scaledToFit().frame(height: cardHeight * 0.55).foregroundColor(.gray)
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .always)) // Show page indicators
-                .frame(height: 200) // Fixed height for carousel
-                .cornerRadius(12)
-                .padding(.bottom, 5) // Add some space below images
-            }
-
-            // Title
-            Text(post.mainCaption)
-                .font(.headline)
-                .foregroundColor(.primary)
-            
-            // Description
-            Text(post.detailedCaption ?? "")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .lineLimit(3)
-            
-            // Footer
-            HStack {
-                // Source
-                // Text(post.source.rawValue)
-                //     .font(.caption)
-                //     .foregroundColor(.blue)
-                
+                // Caption only
+                Text(post.mainCaption)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .padding(.top, 4)
                 Spacer()
-                
-                // Date
-                Text(post.createdAt, style: .date)
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                HStack {
+                    // Username (tap to open profile)
+                    Button(action: { onUserTap?(post.userId) }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.crop.circle")
+                            Text(post.username)
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    Spacer()
+                    // Color-coded timestamp
+                    Text(timeAgoString(for: post.createdAt))
+                        .font(.caption)
+                        .foregroundColor(colorForTimestamp(post.createdAt))
+                }
             }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(radius: 2)
+            .onTapGesture { onCardTap?() }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(radius: 2)
+        .frame(height: cardHeight)
         .padding(.horizontal)
+    }
+    // Helper for time ago string
+    private func timeAgoString(for date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        let hours = Int(interval / 3600)
+        let days = Int(interval / 86400)
+        if hours < 48 {
+            return "Posted \(hours) hours ago"
+        } else if days < 5 {
+            return "Posted \(days) days ago"
+        } else if days < 11 {
+            return "Posted \(days) days ago"
+        } else {
+            return "Posted \(days) days ago"
+        }
+    }
+    // Helper for color coding
+    private func colorForTimestamp(_ date: Date) -> Color {
+        let interval = Date().timeIntervalSince(date)
+        let days = Int(interval / 86400)
+        if days < 2 {
+            return Color(.systemGreen)
+        } else if days < 5 {
+            return Color.green.opacity(0.6)
+        } else if days < 11 {
+            return Color.yellow
+        } else {
+            return Color.gray
+        }
     }
 }
 
@@ -121,7 +115,7 @@ struct PostCard_Previews: PreviewProvider {
             createdAt: Date(),
             likes: 0,
             comments: []
-        ))
+        ), cardHeight: 200)
             .previewLayout(.sizeThatFits)
             .padding()
     }

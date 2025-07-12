@@ -14,6 +14,11 @@ struct SettingsView: View {
     @State private var showOnlineStatus = true
     @State private var allowMessages = true
     @State private var showingSaveAlert = false
+    @State private var baseLocation: String = ""
+    @AppStorage("mainHobbies") private var mainHobbiesString: String = ""
+    @State private var mainHobbies: Set<String> = []
+    @AppStorage("onboardingComplete") private var onboardingComplete: Bool = false
+    let allHobbies = ["Study", "Light Trekking", "Photography", "Gym", "Day Outing", "Others"]
     
     var body: some View {
         NavigationView {
@@ -76,6 +81,31 @@ struct SettingsView: View {
                     }
                 }
                 
+                // Main Hobbies Section
+                Section("Main Hobbies") {
+                    ForEach(allHobbies, id: \.self) { hobby in
+                        Button(action: {
+                            if mainHobbies.contains(hobby) {
+                                mainHobbies.remove(hobby)
+                            } else {
+                                mainHobbies.insert(hobby)
+                            }
+                        }) {
+                            HStack {
+                                Text(hobby)
+                                Spacer()
+                                if mainHobbies.contains(hobby) {
+                                    Image(systemName: "checkmark.circle.fill").foregroundColor(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+                // Base Location Section
+                Section("Base Location") {
+                    TextField("Enter your base location", text: $baseLocation)
+                }
+                
                 // Account Section
                 Section("Account") {
                     NavigationLink("Change Password") {
@@ -111,6 +141,19 @@ struct SettingsView: View {
                 Section {
                     Button("Delete Account", role: .destructive) {
                         // Handle account deletion
+                    }
+                }
+                
+                // Logout Section
+                Section {
+                    Button(role: .destructive) {
+                        // Log out: clear user session and show welcome screen
+                        onboardingComplete = false
+                    } label: {
+                        HStack {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                            Text("Log Out")
+                        }
                     }
                 }
             }
@@ -153,21 +196,22 @@ struct SettingsView: View {
     private func loadCurrentSettings() {
         if let currentUser = userStore.currentUser {
             bio = currentUser.bio ?? ""
+            baseLocation = currentUser.location ?? ""
         }
-        // Load other settings from UserDefaults or app state
+        // Load main hobbies from AppStorage
+        mainHobbies = Set(mainHobbiesString.split(separator: ",").map { String($0) })
     }
     
     private func saveSettings() {
         // Update user bio
         if var currentUser = userStore.currentUser {
             currentUser.bio = bio
+            currentUser.location = baseLocation
             userStore.updateProfile(currentUser)
         }
-        
-        // Save other settings to UserDefaults
-        UserDefaults.standard.set(isDarkMode, forKey: "isDarkMode")
-        UserDefaults.standard.set(fontSize, forKey: "fontSize")
-        UserDefaults.standard.set(isPrivateProfile, forKey: "isPrivateProfile")
+        // Save main hobbies to AppStorage
+        mainHobbiesString = mainHobbies.joined(separator: ",")
+        // Save other settings to UserDefaults or app state
         UserDefaults.standard.set(showOnlineStatus, forKey: "showOnlineStatus")
         UserDefaults.standard.set(allowMessages, forKey: "allowMessages")
         

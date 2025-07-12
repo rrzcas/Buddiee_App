@@ -8,137 +8,78 @@ struct PostDetailView: View {
     @Environment(\.dismiss) var dismiss
     @State private var newComment: String = ""
     @State private var showingCommentAlert = false
+    @State private var showMenu = false
+    @State private var selectedUserId: UserIdWrapper? = nil
+    @State private var showPushAlert = false
+    @State private var showReportAlert = false
+    @State private var comments: [Comment] = []
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Cover Image(s) - TabView for multiple photos
-                if !post.photos.isEmpty {
-                    TabView {
-                        ForEach(post.photos, id: \.self) { photoURL in
-                            if photoURL.hasPrefix("file://") {
-                                // Handle local file URLs
-                                if let url = URL(string: photoURL),
-                                   let imageData = try? Data(contentsOf: url),
-                                   let uiImage = UIImage(data: imageData) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                } else {
-                                    fallbackImageView
-                                }
-                            } else if photoURL.hasPrefix("http") {
-                                // Handle external URLs
-                                if let url = URL(string: photoURL) {
-                                    AsyncImage(url: url) { phase in
-                                        switch phase {
-                                        case .success(let image):
-                                            image
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fill)
-                                        case .failure(_):
-                                            fallbackImageView
-                                        case .empty:
-                                            ProgressView()
-                                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                        @unknown default:
-                                            fallbackImageView
-                                        }
-                                    }
-                                } else {
-                                    fallbackImageView
-                                }
-                            } else {
-                                fallbackImageView
-                            }
-                        }
-                    }
-                    .tabViewStyle(.page)
-                    .frame(height: 300)
-                } else {
-                    fallbackImageView
-                }
-                
-                // Content below image
-                VStack(alignment: .leading, spacing: 12) {
-                    // Main Caption (Title)
-                    Text(post.mainCaption)
-                        .font(.title)
-                        .bold()
-                    
-                    // User Info and other details
-                    HStack {
-                        Image(systemName: "person.circle.fill")
-                        Text(post.username)
-                        Spacer()
-                        Text(post.createdAt, style: .relative)
-                    }
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    
-                    // Detailed Caption
-                    Text(post.detailedCaption ?? "")
-                        .font(.body)
-                    
-                    // Location
-                    if let location = post.location {
-                        Label(location, systemImage: "mappin.and.ellipse")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Divider()
-                    
-                    // Comments Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Comments")
-                            .font(.headline)
-                        
-                        // Comment Input
-                        HStack {
-                            TextField("Add a comment...", text: $newComment)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                            
-                            Button(action: addComment) {
-                                Image(systemName: "paperplane.fill")
-                                    .foregroundColor(.blue)
-                            }
-                            .disabled(newComment.isEmpty)
-                        }
-                        
-                        // Comments List
-                        ForEach(post.comments) { comment in
-                            CommentView(comment: comment)
-                        }
-                    }
-                }
-                .padding()
+                coverImageSection
+                threeDotMenuSection
+                postContentSection
+                Divider()
+                commentsSection
             }
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             historyStore.addToHistory(post)
+            comments = post.comments
         }
         .alert("Comment Added", isPresented: $showingCommentAlert) {
             Button("OK", role: .cancel) {}
         }
+        .alert("Post pushed!", isPresented: $showPushAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your post has been pushed to more people!")
+        }
+        .alert("Report submitted", isPresented: $showReportAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Thank you for reporting. Our team will review this post.")
+        }
+        .sheet(item: $selectedUserId) { userIdWrapper in
+            let userId = userIdWrapper.id
+            let username = post.userId == userId ? post.username : "Unknown"
+            let user = userStore.getUserOrTemp(id: userId, username: username)
+            ProfileView(user: user)
+                .environmentObject(postStore)
+                .environmentObject(userStore)
+        }
     }
     
     private func addComment() {
-        guard !newComment.isEmpty else { return }
-        
+        let trimmed = newComment.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
         let comment = Comment(
-            id: UUID(),
             postId: post.id,
-            userId: userStore.currentUser?.id ?? "",
-            username: userStore.currentUser?.username ?? "Unknown",
-            text: newComment,
+            userId: userStore.currentUser?.id ?? "currentUser",
+            username: userStore.currentUser?.username ?? "You",
+            text: trimmed,
             createdAt: Date()
         )
-        
-        postStore.addComment(comment, to: post)
+        comments.append(comment)
         newComment = ""
-        showingCommentAlert = true
+    }
+    
+    // Helper for time ago string
+    private func timeAgoString(for date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        let hours = Int(interval / 3600)
+        let days = Int(interval / 86400)
+        if hours < 48 {
+            return "Posted \(hours) hours ago"
+        } else if days < 5 {
+            return "Posted \(days) days ago"
+        } else if days < 11 {
+            return "Posted \(days) days ago"
+        } else {
+            return "Posted \(days) days ago"
+        }
     }
     
     private var fallbackImageView: some View {
@@ -154,25 +95,144 @@ struct PostDetailView: View {
         .frame(maxWidth: .infinity)
         .background(Color.gray.opacity(0.1))
     }
+
+    private var coverImageSection: some View {
+        Group {
+            if !post.photos.isEmpty {
+                TabView {
+                    ForEach(post.photos, id: \.self) { photo in
+                        if photo.hasPrefix("file://"), let uiImage = ImageStorage.loadImage(from: photo) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 300)
+                                .clipped()
+                        } else if let url = URL(string: photo) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .empty:
+                                    ProgressView().frame(height: 300)
+                                case .success(let image):
+                                    image.resizable().scaledToFill().frame(height: 300).clipped()
+                                case .failure:
+                                    Image(systemName: "photo").resizable().scaledToFit().frame(height: 300).foregroundColor(.gray)
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
+                        } else {
+                            Image(systemName: "photo").resizable().scaledToFit().frame(height: 300).foregroundColor(.gray)
+                        }
+                    }
+                }
+                .frame(height: 300)
+                .tabViewStyle(PageTabViewStyle())
+            } else {
+                fallbackImageView
+            }
+        }
+    }
+
+    private var threeDotMenuSection: some View {
+        HStack {
+            Spacer()
+            Menu {
+                Button("Push Post") {
+                    showPushAlert = true
+                }
+                Button("Report") {
+                    showReportAlert = true
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.title2)
+                    .foregroundColor(.gray)
+            }
+        }
+    }
+
+    private var postContentSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(post.mainCaption)
+                .font(.title)
+                .bold()
+            HStack {
+                Image(systemName: "person.circle.fill")
+                Button(action: { selectedUserId = UserIdWrapper(id: post.userId) }) {
+                    Text(post.username)
+                        .foregroundColor(.blue)
+                }
+                Spacer()
+                Text(post.createdAt, style: .relative)
+            }
+            .font(.subheadline)
+            .foregroundColor(.secondary)
+            Text(post.detailedCaption ?? "")
+                .font(.body)
+            if let location = post.location {
+                Label(location, systemImage: "mappin.and.ellipse")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.bottom, 8)
+    }
+
+    private var commentsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Comments")
+                .font(.headline)
+            if comments.isEmpty {
+                Text("No comments yet.")
+                    .foregroundColor(.gray)
+            } else {
+                ForEach(comments) { comment in
+                    HStack(alignment: .top, spacing: 8) {
+                        Button(action: { selectedUserId = UserIdWrapper(id: comment.userId) }) {
+                            Text(comment.username)
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(comment.text)
+                                .font(.body)
+                            Text(timeAgoString(for: comment.createdAt))
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+            }
+            HStack {
+                TextField("Add a comment...", text: $newComment)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                Button("Post") {
+                    addComment()
+                }
+                .disabled(newComment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(.top)
+    }
 }
 
 struct CommentView: View {
     let comment: Comment
-    
+    var onUserTap: ((String) -> Void)? = nil
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(comment.username)
-                    .font(.subheadline)
-                    .bold()
-                
+                Button(action: { onUserTap?(comment.userId) }) {
+                    Text(comment.username)
+                        .font(.subheadline)
+                        .bold()
+                        .foregroundColor(.blue)
+                }
                 Spacer()
-                
                 Text(comment.createdAt, style: .relative)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
             Text(comment.text)
                 .font(.body)
         }

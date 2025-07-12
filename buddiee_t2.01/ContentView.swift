@@ -43,10 +43,83 @@ struct FilterButton: View {
 }
 
 struct ContentView: View {
+    @AppStorage("onboardingComplete") var onboardingComplete: Bool = false
+    @AppStorage("selectedHobbies") var selectedHobbiesString: String = ""
+    @AppStorage("locationPref") var locationPref: Bool = true
+    @StateObject var postStore = PostStore()
+    @StateObject var userStore = UserStore()
+    @State private var selectedTab = 0
+    @State private var showPostSuccess = false
+    @State private var justPostedId: UUID? = nil
+    @State private var justPostedHobby: String? = nil
+    @AppStorage("mainHobbies") private var mainHobbiesString: String = ""
+    var mainHobbies: [String] { mainHobbiesString.split(separator: ",").map { String($0) } }
+    
+    var selectedHobbies: [String] {
+        selectedHobbiesString.split(separator: ",").map { String($0) }
+    }
+    
     var body: some View {
-        FirstPostCreationFlow()
-            .environmentObject(PostStore())
-            .environmentObject(UserStore())
+        if !onboardingComplete {
+            OnboardingFlow()
+        } else {
+            TabView(selection: $selectedTab) {
+                // Posts Feed
+                PostsFeedView(
+                    justPostedId: $justPostedId,
+                    showPostSuccess: $showPostSuccess,
+                    selectedHobbies: mainHobbies,
+                    locationPref: locationPref
+                )
+                .tabItem {
+                    Image(systemName: "house.fill")
+                    Text("Posts")
+                }
+                .tag(0)
+                // Create
+                FirstPostCreationFlow(
+                    onPostSuccess: { postId, hobby in
+                        justPostedId = postId
+                        showPostSuccess = true
+                        justPostedHobby = hobby
+                        selectedTab = 0
+                    }
+                )
+                .tabItem {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Create")
+                }
+                .tag(1)
+                // Location
+                LocationFinderView()
+                    .tabItem {
+                        Image(systemName: "map.fill")
+                        Text("Location")
+                    }
+                    .tag(2)
+                // Messages
+                MessagesView()
+                    .tabItem {
+                        Image(systemName: "message.fill")
+                        Text("Messages")
+                    }
+                    .tag(3)
+                // Profile
+                ProfileView(user: userStore.currentUser ?? User(id: "", username: "", profilePicture: nil, bio: ""))
+                    .tabItem {
+                        Image(systemName: "person.crop.circle")
+                        Text("Profile")
+                    }
+                    .tag(4)
+            }
+            .environmentObject(postStore)
+            .environmentObject(userStore)
+            .onAppear {
+                NotificationCenter.default.addObserver(forName: NSNotification.Name("ShowCreateTabAfterOnboarding"), object: nil, queue: .main) { _ in
+                    selectedTab = 1
+                }
+            }
+        }
     }
 }
 

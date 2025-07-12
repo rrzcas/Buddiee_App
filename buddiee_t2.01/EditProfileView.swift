@@ -1,6 +1,67 @@
 import SwiftUI
 import PhotosUI
 
+struct ImageCropperView: View {
+    @Binding var image: UIImage?
+    @Binding var isPresented: Bool
+    @State private var croppedImage: UIImage? = nil
+    @State private var scale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    var body: some View {
+        VStack {
+            Spacer()
+            if let image = image {
+                GeometryReader { geo in
+                    ZStack {
+                        Color.black.opacity(0.7).ignoresSafeArea()
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geo.size.width, height: geo.size.width)
+                            .scaleEffect(scale)
+                            .offset(offset)
+                            .clipShape(Circle())
+                            .gesture(
+                                SimultaneousGesture(
+                                    DragGesture().onChanged { value in
+                                        offset = value.translation
+                                    },
+                                    MagnificationGesture().onChanged { value in
+                                        scale = value
+                                    }
+                                )
+                            )
+                    }
+                }
+                .frame(height: 350)
+            }
+            Spacer()
+            HStack {
+                Button("Cancel") { isPresented = false }
+                Spacer()
+                Button("Crop & Save") {
+                    if let image = image {
+                        croppedImage = cropToCircle(image: image, scale: scale, offset: offset)
+                        self.image = croppedImage
+                        isPresented = false
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+    func cropToCircle(image: UIImage, scale: CGFloat, offset: CGSize) -> UIImage? {
+        let size = min(image.size.width, image.size.height)
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size))
+        return renderer.image { ctx in
+            let rect = CGRect(origin: .zero, size: CGSize(width: size, height: size))
+            ctx.cgContext.addEllipse(in: rect)
+            ctx.cgContext.clip()
+            image.draw(in: rect)
+        }
+    }
+}
+
 struct EditProfileView: View {
     let user: User
     @Environment(\.dismiss) private var dismiss
@@ -9,6 +70,7 @@ struct EditProfileView: View {
     @State private var bio: String
     @State private var photoPickerItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
+    @State private var showCropper = false
     
     init(user: User) {
         self.user = user
@@ -24,6 +86,12 @@ struct EditProfileView: View {
                         Spacer()
                         if let selectedImage {
                             Image(uiImage: selectedImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 100, height: 100)
+                                .clipShape(Circle())
+                        } else if let profilePicture = user.profilePicture, profilePicture.hasPrefix("file://"), let uiImage = ImageStorage.loadImage(from: profilePicture) {
+                            Image(uiImage: uiImage)
                                 .resizable()
                                 .scaledToFill()
                                 .frame(width: 100, height: 100)
@@ -84,21 +152,28 @@ struct EditProfileView: View {
                     if let data = try? await photoPickerItem?.loadTransferable(type: Data.self),
                        let image = UIImage(data: data) {
                         selectedImage = image
+                        showCropper = true
                     }
                 }
+            }
+            .sheet(isPresented: $showCropper) {
+                ImageCropperView(image: $selectedImage, isPresented: $showCropper)
             }
         }
     }
     
     private func saveChanges() {
-        // Here you would typically call a method on a UserStore
-        // to save the updated user information. For now, we just dismiss.
-        
-        // Example of creating an updated user object:
+        // Convert selected image to file path
+        let profilePicturePath: String?
+        if let selectedImage = selectedImage {
+            profilePicturePath = ImageStorage.saveImage(selectedImage, name: "usericon_\(user.id).jpg")
+        } else {
+            profilePicturePath = user.profilePicture
+        }
         let updatedUser = User(
             id: user.id,
             username: username,
-            profilePicture: user.profilePicture, // This would need to be updated with the new image URL after uploading
+            profilePicture: profilePicturePath,
             bio: bio
         )
         print("Saving updated user: \(updatedUser)")

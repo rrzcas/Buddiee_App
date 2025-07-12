@@ -15,43 +15,29 @@ struct PostCard1: View {
         VStack(alignment: .leading, spacing: 0) {
             // Cover Image
             if let firstImage = post.photos.first {
-                if firstImage.hasPrefix("file://") {
-                    // Handle local file URLs
-                    if let url = URL(string: firstImage),
-                       let imageData = try? Data(contentsOf: url),
-                       let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 250)
-                            .clipped()
-                    } else {
-                        fallbackImageView
-                    }
-                } else if firstImage.hasPrefix("http") {
-                    // Handle external URLs
-                    if let imageUrl = URL(string: firstImage) {
-                        AsyncImage(url: imageUrl) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 250)
-                                    .clipped()
-                            case .failure(_):
-                                fallbackImageView
-                            case .empty:
-                                ProgressView()
-                                    .frame(height: 250)
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.gray.opacity(0.1))
-                            @unknown default:
-                                fallbackImageView
-                            }
+                if firstImage.hasPrefix("file://"), let uiImage = ImageStorage.loadImage(from: firstImage) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 250)
+                        .clipped()
+                } else if firstImage.hasPrefix("http"), let imageUrl = URL(string: firstImage) {
+                    AsyncImage(url: imageUrl) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 250)
+                                .clipped()
+                        case .failure(_):
+                            fallbackImageView
+                        case .empty:
+                            ProgressView()
+                                .frame(height: 250)
+                        @unknown default:
+                            fallbackImageView
                         }
-                    } else {
-                        fallbackImageView
                     }
                 } else {
                     fallbackImageView

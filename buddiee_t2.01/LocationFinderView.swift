@@ -9,7 +9,7 @@ struct LocationFinderView: View {
     @State private var internalSelectedLocation: String?
     @Binding var selectedLocation: String?
     @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278), // London coordinates
+        center: CLLocationCoordinate2D(latitude: 51.4956, longitude: -0.1357), // 10 Westminster Rd, London
         span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
     )
     @State private var selectedPost: Post?
@@ -158,10 +158,8 @@ struct LocationFinderView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        // Center map on user location
-                        if let userLocation = locationManager.userLocation {
-                            region.center = userLocation.coordinate
-                        }
+                        // Center map on 10 Westminster Rd, London
+                        region.center = CLLocationCoordinate2D(latitude: 51.4956, longitude: -0.1357)
                     }) {
                         Image(systemName: "location.fill")
                     }

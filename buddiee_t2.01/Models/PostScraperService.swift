@@ -1,4 +1,27 @@
 import Foundation
+import UIKit
+
+struct ImageStorage {
+    static func saveImage(_ image: UIImage, name: String? = nil) -> String? {
+        let fileName = name ?? UUID().uuidString + ".jpg"
+        guard let data = image.jpegData(compressionQuality: 0.9) else { return nil }
+        let url = getDocumentsDirectory().appendingPathComponent(fileName)
+        do {
+            try data.write(to: url)
+            return url.absoluteString
+        } catch {
+            print("Failed to save image: \(error)")
+            return nil
+        }
+    }
+    static func loadImage(from path: String) -> UIImage? {
+        guard let url = URL(string: path), FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return UIImage(contentsOfFile: url.path)
+    }
+    static func getDocumentsDirectory() -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    }
+}
 
 public class PostScraperService {
     // MARK: - Properties

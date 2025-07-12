@@ -1,6 +1,7 @@
 import SwiftUI
 import PhotosUI
 import Photos
+import Foundation
 
 enum PostCreationStep {
     case photos, details, profile, verify, review
@@ -23,7 +24,18 @@ struct FirstPostCreationFlow: View {
     @State private var content: String = ""
     @State private var selectedCategory: String = "Study"
     @State private var detailsError: String? = nil
-    let hobbyOptions = ["Study", "Light Trekking", "Photography", "Gym", "Day Outing", "Others"]
+    let allHobbies = ["Study", "Light Trekking", "Photography", "Gym", "Day Outing", "Others"]
+    @AppStorage("onboardingComplete") private var onboardingComplete: Bool = false
+    @AppStorage("selectedHobbies") private var selectedHobbiesString: String = ""
+    @AppStorage("firstPostDone") private var firstPostDone: Bool = false
+    var onboardingHobbies: [String] { selectedHobbiesString.split(separator: ",").map { String($0) } }
+    var hobbyOptions: [String] {
+        if !firstPostDone {
+            return onboardingHobbies
+        } else {
+            return allHobbies
+        }
+    }
     // Step 3: Profile
     @State private var userIconPickerItem: PhotosPickerItem? = nil
     @State private var userIconImage: UIImage? = nil
@@ -39,6 +51,8 @@ struct FirstPostCreationFlow: View {
     // Step 5: Review & Post
     @State private var postError: String? = nil
     @State private var postSuccess = false
+    @State private var location: String = "London, UK" // Default/fake location
+    var onPostSuccess: ((UUID, String) -> Void)? = nil
     var body: some View {
         NavigationView {
             VStack {
@@ -184,6 +198,14 @@ struct FirstPostCreationFlow: View {
             }
             .pickerStyle(MenuPickerStyle())
             Divider().background(Color.gray)
+            HStack {
+                Text("Location")
+                if location.isEmpty && detailsError != nil {
+                    Text("required").foregroundColor(.red).font(.caption)
+                }
+            }
+            TextField("Enter location (e.g. London, UK)", text: $location)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
             Text("") // Spacer for visual separation
         }.padding()
     }
@@ -274,9 +296,19 @@ struct FirstPostCreationFlow: View {
                 }
                 TextField("Verification Code", text: $code)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                Button("Send Code") { /* UI only for now */ }
+                Button("Send Code (Skip for Test)") {
+                    // For testing, immediately allow continue
+                    verificationMethod = "email"
+                    email = "test@example.com"
+                    code = "123456"
+                    verificationError = nil
+                }
             } else if verificationMethod == "apple" {
-                Button("Sign in with Apple") { /* UI only for now */ }
+                Button("Sign in with Apple (Skip for Test)") {
+                    // For testing, immediately allow continue
+                    verificationMethod = "apple"
+                    verificationError = nil
+                }
             }
             if let error = verificationError {
                 Text(error).foregroundColor(.red).font(.caption)
@@ -302,7 +334,7 @@ struct FirstPostCreationFlow: View {
         case .photos:
             return postSelectedImages.count >= 1 && postSelectedImages.count <= 6 && !isLoadingImages
         case .details:
-            return !title.isEmpty && !content.isEmpty && !selectedCategory.isEmpty
+            return !title.isEmpty && !content.isEmpty && !selectedCategory.isEmpty && !location.isEmpty
         case .profile:
             return !username.isEmpty && !uuid.isEmpty
         case .verify:
@@ -374,19 +406,28 @@ struct FirstPostCreationFlow: View {
     private func createAccountAndPost() {
         isLoading = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            let user = User(id: uuid, username: username, profilePicture: nil, bio: "")
+            // Save user icon to disk if available
+            var userIconPath: String? = nil
+            if let userIconImage = userIconImage {
+                userIconPath = ImageStorage.saveImage(userIconImage, name: "usericon_\(uuid).jpg")
+            }
+            let user = User(id: uuid, username: username, profilePicture: userIconPath, bio: "")
             userStore.currentUser = user
             userStore.users.append(user)
+            // Save post images to disk
+            let photoPaths: [String] = postSelectedImages.enumerated().compactMap { (idx, img) in
+                ImageStorage.saveImage(img, name: "post_\(uuid)_\(idx).jpg")
+            }
             let newPost = Post(
                 id: UUID(),
                 userId: uuid,
                 username: username,
-                photos: postSelectedImages.map { _ in "local-image" },
+                photos: photoPaths,
                 mainCaption: title,
                 detailedCaption: content,
                 subject: selectedCategory,
-                location: "",
-                userLocation: "",
+                location: location,
+                userLocation: location,
                 createdAt: Date(),
                 likes: 0,
                 comments: [],
@@ -395,7 +436,13 @@ struct FirstPostCreationFlow: View {
             )
             postStore.createPost(newPost)
             isLoading = false
+            if let onPostSuccess = onPostSuccess {
+                onPostSuccess(newPost.id, selectedCategory)
+            }
             postSuccess = true
+            if !firstPostDone {
+                firstPostDone = true
+            }
         }
     }
 }
